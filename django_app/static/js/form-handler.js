@@ -45,13 +45,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const trackingForm = document.getElementById('leadFormTracking');
-    if (trackingForm) {
-        trackingForm.addEventListener('submit', (e) => handleFormSubmit(e, 'rastreamento'));
-    }
+    // Dynamic: bind all forms with id starting with "leadForm_"
+    document.querySelectorAll('form[id^="leadForm_"]').forEach(form => {
+        const source = form.dataset.source || form.id.replace('leadForm_', '') || 'geral';
+        form.addEventListener('submit', (e) => handleFormSubmit(e, source));
+    });
 
-    const energyForm = document.getElementById('leadFormEnergy');
-    if (energyForm) {
-        energyForm.addEventListener('submit', (e) => handleFormSubmit(e, 'energia'));
-    }
+    // Legacy: keep backward compat for old form IDs
+    const legacyForms = { leadFormTracking: 'rastreamento', leadFormEnergy: 'energia' };
+    Object.entries(legacyForms).forEach(([id, source]) => {
+        const form = document.getElementById(id);
+        if (form && !form.id.startsWith('leadForm_')) {
+            form.addEventListener('submit', (e) => handleFormSubmit(e, source));
+        }
+    });
 });

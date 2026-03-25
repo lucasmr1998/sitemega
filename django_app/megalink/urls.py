@@ -9,7 +9,6 @@ urlpatterns = [
     path('painel/', include('dashboard.urls')),
     path('api/', include('leads.urls')),
     path('', include('builder.urls')),
-    path('', include('pages.urls')),
 ]
 
 if settings.DEBUG:

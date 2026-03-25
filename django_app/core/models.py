@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.db import models
 from colorfield.fields import ColorField
 
@@ -54,10 +55,14 @@ class SiteConfig(models.Model):
     def save(self, *args, **kwargs):
         self.pk = 1
         super().save(*args, **kwargs)
+        cache.delete('site_config')
 
     @classmethod
     def load(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
+        obj = cache.get('site_config')
+        if obj is None:
+            obj, _ = cls.objects.get_or_create(pk=1)
+            cache.set('site_config', obj, 300)
         return obj
 
 

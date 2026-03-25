@@ -238,6 +238,24 @@ COMPONENT_SCHEMAS = {
         ],
     },
 
+    'blog_cards': {
+        'name': 'Cards de Blog',
+        'icon': 'fa-solid fa-newspaper',
+        'description': 'Grid de posts/artigos com imagem, tag e resumo',
+        'template': 'components/blog_cards.html',
+        'schema': [
+            {'name': 'heading', 'type': 'text', 'label': 'Título da seção'},
+            {'name': 'posts', 'type': 'repeater', 'label': 'Posts', 'fields': [
+                {'name': 'title', 'type': 'text', 'label': 'Título'},
+                {'name': 'excerpt', 'type': 'textarea', 'label': 'Resumo'},
+                {'name': 'category_tag', 'type': 'text', 'label': 'Categoria'},
+                {'name': 'tag_bg_color', 'type': 'color', 'label': 'Cor da tag', 'default': '#2323FA'},
+                {'name': 'image', 'type': 'image', 'label': 'Imagem'},
+                {'name': 'link', 'type': 'url', 'label': 'Link'},
+            ]},
+        ],
+    },
+
     'benefits_showcase': {
         'name': 'Showcase de Benefícios',
         'icon': 'fa-solid fa-shield-halved',

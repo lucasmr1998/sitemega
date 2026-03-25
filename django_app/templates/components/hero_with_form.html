@@ -40,7 +40,7 @@
                         <p class="text-sm text-gray-500 mb-6">{{ data.form_subtitle }}</p>
                     {% endif %}
 
-                    <form action="#" class="space-y-4" id="leadForm_{{ data.form_source|default:'geral' }}">
+                    <form class="space-y-4" id="leadForm_{{ data.form_source|default:'geral' }}" data-source="{{ data.form_source|default:'geral' }}">
                         {% if data.form_fields %}
                             {% for field in data.form_fields %}
                                 {% if field.half_width %}<div class="grid grid-cols-2 gap-4"><div>{% endif %}

@@ -2,6 +2,11 @@
 
 {% block title %}Editar {{ comp.component_type.name }}{% endblock %}
 
+{% block extra_head %}
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="mb-8">
     <a href="{% url 'dashboard:page_editor' pk=page_obj.pk %}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand transition mb-3">
@@ -94,7 +99,46 @@ schema.forEach(field => {
             addRepeaterItemWithData(field.name, field.fields, idx, item);
         });
 
-    } else if (field.type === 'textarea' || field.type === 'richtext') {
+    } else if (field.type === 'richtext') {
+        const v = val || '';
+        const rtId = `rt_${field.name}`;
+        wrap.innerHTML = `
+            <label class="${cls.label}">${esc(field.label)}</label>
+            <div id="${rtId}_toolbar"></div>
+            <div id="${rtId}_editor" class="border border-gray-300 rounded-b-lg min-h-[200px] bg-white"></div>
+            <textarea name="${field.name}" id="${rtId}" class="hidden">${esc(v)}</textarea>`;
+        container.appendChild(wrap);
+        // Init Quill after DOM insertion
+        if (typeof Quill !== 'undefined') {
+            const q = new Quill(`#${rtId}_editor`, {
+                theme: 'snow',
+                modules: { toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'header': [2, 3, false] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link'],
+                    ['clean']
+                ]},
+            });
+            q.root.innerHTML = v;
+            q.on('text-change', () => {
+                document.getElementById(rtId).value = q.root.innerHTML;
+            });
+        }
+
+    } else if (field.type === 'image') {
+        const v = val || '';
+        const imgPreview = v ? `<div class="mb-2"><img src="${esc(v)}" class="max-h-32 rounded border border-gray-200 object-cover"></div>` : '';
+        wrap.innerHTML = `
+            <label class="${cls.label}">${esc(field.label)}</label>
+            ${imgPreview}
+            <input type="file" name="${field.name}" accept="image/*"
+                class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand/10 file:text-brand hover:file:bg-brand/20 transition">
+            <input type="hidden" name="${field.name}_current" value="${esc(v)}">
+            ${v ? '<p class="text-xs text-gray-400 mt-1">Envie nova imagem para substituir a atual</p>' : ''}`;
+        container.appendChild(wrap);
+
+    } else if (field.type === 'textarea') {
         const v = val || '';
         wrap.innerHTML = `
             <label class="${cls.label}">${esc(field.label)}</label>
@@ -218,6 +262,13 @@ function addRepeaterItemWithData(fieldName, subFields, idx, itemData) {
                     <input type="color" name="${inputName}" value="${esc(cv)}" class="w-8 h-8 rounded border border-gray-200 cursor-pointer" oninput="this.nextElementSibling.value=this.value">
                     <input type="text" value="${esc(cv)}" class="${cls.subInput}" oninput="this.previousElementSibling.value=this.value">
                 </div></div>`;
+        } else if (sf.type === 'image') {
+            const imgPrev = val ? `<div class="mb-1"><img src="${esc(val)}" class="max-h-20 rounded border border-gray-200 object-cover"></div>` : '';
+            html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
+                ${imgPrev}
+                <input type="file" name="${inputName}" accept="image/*"
+                    class="w-full text-sm text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-brand/10 file:text-brand">
+                <input type="hidden" name="${inputName}_current" value="${esc(val || '')}"></div>`;
         } else {
             html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
                 <input type="${sf.type || 'text'}" name="${inputName}" value="${esc(val || '')}" class="${cls.subInput}"></div>`;

@@ -1,0 +1,124 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Mídia{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Biblioteca de Mídia</h1>
+        <p class="text-sm text-gray-400 mt-1">Gerencie imagens e arquivos do site.</p>
+    </div>
+</div>
+
+<!-- Upload + Search -->
+<div class="flex flex-col sm:flex-row gap-3 mb-6">
+    <form id="uploadForm" class="flex-shrink-0">
+        {% csrf_token %}
+        <label class="inline-flex items-center gap-2 bg-brand text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-dark transition cursor-pointer">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Enviar arquivo
+            <input type="file" name="file" accept="image/*,.pdf,.doc,.docx" class="hidden" id="fileInput">
+        </label>
+    </form>
+    <form method="get" class="flex-1 flex gap-2">
+        <input type="text" name="q" value="{{ query }}" placeholder="Buscar por nome..."
+            class="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand outline-none">
+        <select name="type" class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white">
+            <option value="">Todos</option>
+            <option value="image" {% if file_type == 'image' %}selected{% endif %}>Imagens</option>
+            <option value="document" {% if file_type == 'document' %}selected{% endif %}>Documentos</option>
+            <option value="video" {% if file_type == 'video' %}selected{% endif %}>Vídeos</option>
+        </select>
+        <button type="submit" class="px-4 py-2.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+            <i class="fa-solid fa-search"></i>
+        </button>
+    </form>
+</div>
+
+<!-- Upload progress -->
+<div id="uploadProgress" class="hidden mb-4 bg-brand/5 border border-brand/20 rounded-lg p-4 text-sm text-brand">
+    <i class="fa-solid fa-spinner fa-spin mr-2"></i> Enviando arquivo...
+</div>
+
+<!-- Grid -->
+<div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+    {% for f in files %}
+    <div class="group relative bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition">
+        {% if f.is_image %}
+            <div class="aspect-square bg-gray-100">
+                <img src="{{ f.url }}" alt="{{ f.alt_text|default:f.title }}" class="w-full h-full object-cover">
+            </div>
+        {% else %}
+            <div class="aspect-square bg-gray-50 flex items-center justify-center">
+                <i class="fa-solid fa-file text-4xl text-gray-300"></i>
+            </div>
+        {% endif %}
+        <div class="p-2">
+            <p class="text-xs font-medium text-gray-700 truncate">{{ f.title }}</p>
+            <p class="text-[10px] text-gray-400">{{ f.file_type }} · {{ f.file_size|filesizeformat }}</p>
+        </div>
+        <!-- Overlay actions -->
+        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+            <button onclick="copyUrl('{{ f.url }}')" title="Copiar URL"
+                class="w-9 h-9 rounded-lg bg-white text-gray-700 flex items-center justify-center text-sm hover:bg-gray-100">
+                <i class="fa-solid fa-link"></i>
+            </button>
+            <form method="post" action="{% url 'dashboard:media_delete' pk=f.pk %}" class="inline"
+                onsubmit="return confirm('Excluir este arquivo?')">
+                {% csrf_token %}
+                <button type="submit" title="Excluir"
+                    class="w-9 h-9 rounded-lg bg-white text-red-500 flex items-center justify-center text-sm hover:bg-red-50">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full text-center py-16 text-gray-400">
+        <i class="fa-solid fa-photo-film text-4xl mb-3 block"></i>
+        <p class="text-sm">Nenhum arquivo encontrado.</p>
+        <p class="text-xs mt-1">Envie seu primeiro arquivo usando o botão acima.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+document.getElementById('fileInput').addEventListener('change', async function() {
+    const file = this.files[0];
+    if (!file) return;
+
+    const progress = document.getElementById('uploadProgress');
+    progress.classList.remove('hidden');
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('csrfmiddlewaretoken', csrfToken);
+
+    try {
+        const res = await fetch('{% url "dashboard:media_upload" %}', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.status === 'ok') {
+            location.reload();
+        } else {
+            alert(data.error || 'Erro ao enviar arquivo');
+        }
+    } catch (err) {
+        alert('Erro de conexão');
+    } finally {
+        progress.classList.add('hidden');
+        this.value = '';
+    }
+});
+
+function copyUrl(url) {
+    const full = location.origin + url;
+    navigator.clipboard.writeText(full).then(() => {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm z-50';
+        toast.textContent = 'URL copiada!';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    });
+}
+</script>
+{% endblock %}

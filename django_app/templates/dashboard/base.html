@@ -95,23 +95,8 @@
                     <a href="{% url 'dashboard:components_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'components' %}active{% endif %}">
                         <i class="fa-solid fa-puzzle-piece w-4 text-center text-xs"></i> Componentes
                     </a>
-                </nav>
-
-                <div class="px-4 mt-6 mb-2">
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-3">Conteúdo (legado)</span>
-                </div>
-                <nav class="space-y-0.5 px-3">
-                    <a href="{% url 'dashboard:banners_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'banners' %}active{% endif %}">
-                        <i class="fa-solid fa-images w-4 text-center text-xs"></i> Banners
-                    </a>
-                    <a href="{% url 'dashboard:plans_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'plans' %}active{% endif %}">
-                        <i class="fa-solid fa-wifi w-4 text-center text-xs"></i> Planos
-                    </a>
-                    <a href="{% url 'dashboard:energia' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'energia' %}active{% endif %}">
-                        <i class="fa-solid fa-bolt w-4 text-center text-xs"></i> Energia
-                    </a>
-                    <a href="{% url 'dashboard:rastreamento' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'rastreamento' %}active{% endif %}">
-                        <i class="fa-solid fa-location-dot w-4 text-center text-xs"></i> Rastreamento
+                    <a href="{% url 'dashboard:media_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'media' %}active{% endif %}">
+                        <i class="fa-solid fa-photo-film w-4 text-center text-xs"></i> Mídia
                     </a>
                 </nav>
 

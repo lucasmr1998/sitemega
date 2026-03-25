@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selecionar Imagem</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-gray-50 p-4">
+
+<div class="mb-4">
+    <form method="get" class="flex gap-2">
+        <input type="text" name="q" value="{{ query }}" placeholder="Buscar imagem..."
+            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+        <button class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm"><i class="fa-solid fa-search"></i></button>
+    </form>
+</div>
+
+<div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+    {% for f in files %}
+    <button type="button"
+        onclick="selectImage('{{ f.url }}', '{{ f.title|escapejs }}')"
+        class="aspect-square rounded-lg border-2 border-transparent hover:border-blue-500 overflow-hidden transition focus:border-blue-500 focus:outline-none">
+        <img src="{{ f.url }}" alt="{{ f.title }}" class="w-full h-full object-cover">
+    </button>
+    {% empty %}
+    <div class="col-span-full text-center py-8 text-gray-400 text-sm">
+        Nenhuma imagem encontrada.
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function selectImage(url, title) {
+    if (window.parent && window.parent.onMediaSelected) {
+        window.parent.onMediaSelected(url, title);
+    }
+}
+</script>
+</body>
+</html>

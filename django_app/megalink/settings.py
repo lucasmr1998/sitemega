@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'leads',
     'dashboard',
     'builder',
+    'media_library',
 ]
 
 MIDDLEWARE = [
@@ -95,6 +96,13 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Media (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Cache
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
 
 # URLs
 APPEND_SLASH = False

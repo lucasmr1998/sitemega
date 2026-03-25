@@ -2,6 +2,7 @@ import json
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.files.storage import default_storage
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
@@ -131,7 +132,7 @@ def component_edit(request, pk):
     schema = comp.component_type.schema
 
     if request.method == 'POST':
-        data = _parse_component_data(request.POST, schema)
+        data = _parse_component_data(request.POST, request.FILES, schema, comp.data)
         comp.data = data
         comp.is_active = request.POST.get('is_active') == 'on'
         comp.css_classes = request.POST.get('css_classes', '')
@@ -187,8 +188,15 @@ def components_list(request):
 
 # ─── Helper: Parse form data from schema ─────────────────────────────────────
 
-def _parse_component_data(post_data, schema):
+def _save_upload(uploaded_file):
+    """Save an uploaded file and return its URL."""
+    path = default_storage.save(f'components/{uploaded_file.name}', uploaded_file)
+    return default_storage.url(path)
+
+
+def _parse_component_data(post_data, files, schema, existing_data=None):
     """Parse POST data into JSON structure based on component schema."""
+    existing_data = existing_data or {}
     data = {}
     for field in schema:
         name = field['name']
@@ -196,6 +204,12 @@ def _parse_component_data(post_data, schema):
 
         if ftype == 'checkbox':
             data[name] = post_data.get(name) == 'on'
+        elif ftype == 'image':
+            uploaded = files.get(name)
+            if uploaded:
+                data[name] = _save_upload(uploaded)
+            else:
+                data[name] = post_data.get(f'{name}_current', '') or existing_data.get(name, '')
         elif ftype == 'list':
             raw = post_data.get(name, '')
             data[name] = [line.strip() for line in raw.split('\n') if line.strip()]
@@ -206,14 +220,15 @@ def _parse_component_data(post_data, schema):
                 data[name] = 0
         elif ftype == 'repeater':
             sub_fields = field.get('fields', [])
+            existing_items = existing_data.get(name, [])
             items = []
-            # Repeater items are sent as name__0__subfield, name__1__subfield, etc.
             idx = 0
             while True:
                 prefix = f'{name}__{idx}__'
-                has_any = any(k.startswith(prefix) for k in post_data)
+                has_any = any(k.startswith(prefix) for k in post_data) or any(k.startswith(prefix) for k in files)
                 if not has_any:
                     break
+                existing_item = existing_items[idx] if idx < len(existing_items) else {}
                 item = {}
                 for sf in sub_fields:
                     sf_name = sf['name']
@@ -222,7 +237,13 @@ def _parse_component_data(post_data, schema):
                         item[sf_name] = post_data.get(key) == 'on'
                     elif sf['type'] == 'list':
                         raw = post_data.get(key, '')
-                        item[sf_name] = [l.strip() for l in raw.split('\n') if l.strip()]
+                        item[sf_name] = [ln.strip() for ln in raw.split('\n') if ln.strip()]
+                    elif sf['type'] == 'image':
+                        uploaded = files.get(key)
+                        if uploaded:
+                            item[sf_name] = _save_upload(uploaded)
+                        else:
+                            item[sf_name] = post_data.get(f'{key}_current', '') or existing_item.get(sf_name, '')
                     else:
                         item[sf_name] = post_data.get(key, '')
                 items.append(item)

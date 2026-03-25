@@ -1,5 +1,5 @@
 from django.http import Http404
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 
 from .models import Page
 
@@ -7,7 +7,6 @@ from .models import Page
 def page_view(request, slug=None):
     """Renderiza qualquer página dinâmica pelo slug."""
     if slug is None:
-        # Homepage
         page = Page.objects.filter(is_homepage=True, status='published').first()
         if not page:
             raise Http404('Nenhuma página inicial configurada')
@@ -20,3 +19,7 @@ def page_view(request, slug=None):
         'page': page,
         'sections': sections,
     })
+
+
+def lojas_redirect(request):
+    return redirect('https://megalinktelecom.com.br/lojas')

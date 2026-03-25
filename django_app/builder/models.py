@@ -54,6 +54,11 @@ class Page(models.Model):
         ordering = ['-updated_at']
         verbose_name = 'Página'
         verbose_name_plural = 'Páginas'
+        indexes = [
+            models.Index(fields=['slug']),
+            models.Index(fields=['status']),
+            models.Index(fields=['is_homepage', 'status']),
+        ]
 
     def __str__(self):
         return self.title
@@ -91,6 +96,9 @@ class PageComponent(models.Model):
         ordering = ['order']
         verbose_name = 'Componente da Página'
         verbose_name_plural = 'Componentes da Página'
+        indexes = [
+            models.Index(fields=['page', 'order']),
+        ]
 
     def __str__(self):
         return f'{self.page.title} > {self.component_type.name} (#{self.order})'
