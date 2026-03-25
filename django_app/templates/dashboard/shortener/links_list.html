@@ -1,0 +1,116 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Links Curtos{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Encurtador de Links</h1>
+        <p class="text-sm text-gray-400 mt-1">{{ total_links }} link{{ total_links|pluralize:"s" }} · {{ total_clicks }} clique{{ total_clicks|pluralize:"s" }} total</p>
+    </div>
+    <a href="{% url 'dashboard:link_add' %}" class="bg-brand text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-dark transition flex items-center gap-2">
+        <i class="fa-solid fa-plus text-xs"></i> Novo Link
+    </a>
+</div>
+
+<!-- Search -->
+<form method="get" class="mb-6">
+    <div class="flex gap-2">
+        <input type="text" name="q" value="{{ query }}" placeholder="Buscar por título..."
+            class="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand outline-none">
+        <button type="submit" class="px-4 py-2.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+            <i class="fa-solid fa-search"></i>
+        </button>
+    </div>
+</form>
+
+<!-- Table -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <table class="w-full">
+        <thead>
+            <tr class="text-left text-[10px] font-bold uppercase text-gray-400 border-b border-gray-100">
+                <th class="px-6 py-3">Link</th>
+                <th class="px-6 py-3">Destino</th>
+                <th class="px-6 py-3 text-center">Cliques</th>
+                <th class="px-6 py-3">Status</th>
+                <th class="px-6 py-3 text-center">Criado</th>
+                <th class="px-6 py-3 text-right">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for link in links %}
+            <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition group">
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                        <code class="text-sm font-bold text-brand bg-brand/5 px-2 py-0.5 rounded">/{{ link.code }}</code>
+                        <button onclick="copyUrl('{{ link.code }}')" class="text-gray-300 hover:text-brand transition text-xs" title="Copiar URL">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                    {% if link.title %}
+                    <p class="text-xs text-gray-400 mt-0.5 truncate max-w-[200px]">{{ link.title }}</p>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4">
+                    <a href="{{ link.destination_url }}" target="_blank" class="text-sm text-gray-600 hover:text-brand transition truncate block max-w-[300px]">
+                        {{ link.destination_url|truncatechars:60 }}
+                    </a>
+                </td>
+                <td class="px-6 py-4 text-center">
+                    <span class="text-sm font-bold text-gray-900">{{ link.click_count }}</span>
+                </td>
+                <td class="px-6 py-4">
+                    {% if link.is_active %}
+                        <span class="px-2 py-0.5 text-[10px] font-bold uppercase bg-green-100 text-green-700 rounded-full">Ativo</span>
+                    {% else %}
+                        <span class="px-2 py-0.5 text-[10px] font-bold uppercase bg-gray-100 text-gray-500 rounded-full">Inativo</span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 text-center text-xs text-gray-400">
+                    {{ link.created_at|date:"d/m/Y" }}
+                </td>
+                <td class="px-6 py-4">
+                    <div class="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition">
+                        <a href="{% url 'dashboard:link_stats' pk=link.pk %}"
+                            class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center hover:bg-purple-100 transition text-xs" title="Estatísticas">
+                            <i class="fa-solid fa-chart-bar"></i>
+                        </a>
+                        <a href="{% url 'dashboard:link_edit' pk=link.pk %}"
+                            class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition text-xs" title="Editar">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <form method="post" action="{% url 'dashboard:link_delete' pk=link.pk %}" class="inline"
+                              onsubmit="return confirm('Excluir este link?')">
+                            {% csrf_token %}
+                            <button type="submit" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition text-xs" title="Excluir">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="px-6 py-16 text-center">
+                    <i class="fa-solid fa-link text-4xl text-gray-300 mb-4 block"></i>
+                    <p class="text-gray-500 text-sm">Nenhum link curto criado.</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function copyUrl(code) {
+    const full = location.origin + '/' + code;
+    navigator.clipboard.writeText(full).then(() => {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm z-50';
+        toast.textContent = 'Link copiado: ' + full;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+    });
+}
+</script>
+{% endblock %}

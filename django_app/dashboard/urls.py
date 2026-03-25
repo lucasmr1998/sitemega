@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from . import builder_views
 from media_library import views as media_views
+from shortener import dashboard_views as shortener_views
 
 app_name = 'dashboard'
 
@@ -59,6 +60,13 @@ urlpatterns = [
 
     # Analytics
     path('analytics', builder_views.analytics_view, name='analytics'),
+
+    # Shortener
+    path('links', shortener_views.links_list, name='links_list'),
+    path('links/novo', shortener_views.link_form, name='link_add'),
+    path('links/<int:pk>', shortener_views.link_form, name='link_edit'),
+    path('links/<int:pk>/excluir', shortener_views.link_delete, name='link_delete'),
+    path('links/<int:pk>/stats', shortener_views.link_stats, name='link_stats'),
 
     # Media Library
     path('media', media_views.media_list, name='media_list'),

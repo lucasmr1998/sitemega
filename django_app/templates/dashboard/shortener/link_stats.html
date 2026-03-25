@@ -1,0 +1,107 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Stats - {{ link.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <a href="{% url 'dashboard:links_list' %}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand transition mb-3">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Links
+    </a>
+    <div class="flex items-center gap-3">
+        <h1 class="text-2xl font-bold text-gray-900">{{ link.title|default:link.code }}</h1>
+        <code class="text-sm font-bold text-brand bg-brand/5 px-2 py-0.5 rounded">/{{ link.code }}</code>
+    </div>
+    <p class="text-sm text-gray-400 mt-1 truncate">→ {{ link.destination_url }}</p>
+</div>
+
+<!-- KPIs -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Total de Cliques</div>
+        <span class="text-3xl font-extrabold text-gray-900">{{ total_clicks }}</span>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Cliques Hoje</div>
+        <span class="text-3xl font-extrabold text-gray-900">{{ clicks_today }}</span>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Criado em</div>
+        <span class="text-lg font-bold text-gray-900">{{ link.created_at|date:"d/m/Y H:i" }}</span>
+    </div>
+</div>
+
+<!-- Chart -->
+<div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+    <h3 class="text-sm font-bold text-gray-900 mb-4">Cliques por Dia (30 dias)</h3>
+    <canvas id="clicksChart" height="100"></canvas>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Top Referers -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-sm font-bold text-gray-900">Top Origens</h3>
+        </div>
+        <table class="w-full">
+            <tbody>
+                {% for ref in top_referers %}
+                <tr class="border-b border-gray-50">
+                    <td class="px-6 py-3 text-sm text-gray-600 truncate max-w-[300px]">{{ ref.referer|truncatechars:60 }}</td>
+                    <td class="px-6 py-3 text-right text-sm font-bold text-gray-900">{{ ref.total }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="2" class="px-6 py-8 text-center text-sm text-gray-400">Sem dados de origem.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Recent Clicks -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-sm font-bold text-gray-900">Cliques Recentes</h3>
+        </div>
+        <div class="max-h-[300px] overflow-y-auto">
+            <table class="w-full">
+                <tbody>
+                    {% for click in recent_clicks %}
+                    <tr class="border-b border-gray-50">
+                        <td class="px-6 py-2.5 text-xs text-gray-400">{{ click.clicked_at|date:"d/m H:i" }}</td>
+                        <td class="px-6 py-2.5 text-xs text-gray-500 truncate max-w-[150px]">{{ click.ip_address|default:'-' }}</td>
+                        <td class="px-6 py-2.5 text-xs text-gray-400 truncate max-w-[200px]">{{ click.user_agent|truncatechars:40 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="px-6 py-8 text-center text-sm text-gray-400">Nenhum clique registrado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('clicksChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ chart_labels|safe }},
+        datasets: [{
+            label: 'Cliques',
+            data: {{ chart_data|safe }},
+            backgroundColor: 'rgba(35, 35, 250, 0.15)',
+            borderColor: '#2323FA',
+            borderWidth: 1,
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 } },
+            x: { grid: { display: false } },
+        },
+    },
+});
+</script>
+{% endblock %}

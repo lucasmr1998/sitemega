@@ -5,6 +5,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from builder.sitemaps import PageSitemap
+from builder.views import page_view as homepage_view
+from shortener.views import redirect_view as shortener_redirect
 
 sitemaps = {'pages': PageSitemap}
 
@@ -14,7 +16,12 @@ urlpatterns = [
     path('painel/', include('dashboard.urls')),
     path('api/', include('leads.urls')),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='sitemap'),
+    # Builder pages (/p/slug, /lojas)
     path('', include('builder.urls')),
+    # Homepage (must be before shortener catch-all)
+    path('', homepage_view, name='homepage'),
+    # Shortener catch-all (last — /<code>)
+    path('<slug:code>', shortener_redirect, name='short_redirect'),
 ]
 
 if settings.DEBUG:

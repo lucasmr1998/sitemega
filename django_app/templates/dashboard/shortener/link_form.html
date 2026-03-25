@@ -1,0 +1,57 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{% if link %}Editar{% else %}Novo{% endif %} Link{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <a href="{% url 'dashboard:links_list' %}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand transition mb-3">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Links
+    </a>
+    <h1 class="text-2xl font-bold text-gray-900">{% if link %}Editar Link{% else %}Novo Link Curto{% endif %}</h1>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 p-6 max-w-2xl">
+    <form method="post">
+        {% csrf_token %}
+        <div class="space-y-5">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1.5">URL de destino <span class="text-red-400">*</span></label>
+                <input type="url" name="destination_url" value="{{ link.destination_url|default:'' }}" required
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none transition"
+                    placeholder="https://exemplo.com/pagina-longa">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Título <span class="text-gray-400 font-normal">(interno)</span></label>
+                <input type="text" name="title" value="{{ link.title|default:'' }}"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand outline-none transition"
+                    placeholder="Promoção Black Friday">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Código personalizado <span class="text-gray-400 font-normal">(opcional)</span></label>
+                <div class="flex items-center gap-0">
+                    <span class="text-sm text-gray-400 bg-gray-50 border border-r-0 border-gray-300 rounded-l-lg px-3 py-2.5">{{ request.get_host }}/</span>
+                    <input type="text" name="code" value="{{ link.code|default:'' }}"
+                        class="flex-1 border border-gray-300 rounded-r-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand outline-none transition"
+                        placeholder="black-friday" pattern="[a-zA-Z0-9_-]+" title="Letras, números, - e _">
+                </div>
+                <p class="text-xs text-gray-400 mt-1">Deixe vazio para gerar automaticamente.</p>
+            </div>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="is_active" {% if link.is_active or not link %}checked{% endif %}
+                    class="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand">
+                <span class="text-sm text-gray-600">Link ativo</span>
+            </label>
+        </div>
+
+        <div class="flex items-center gap-3 mt-8 pt-6 border-t border-gray-100">
+            <button type="submit" class="bg-brand text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-dark transition">
+                {% if link %}Salvar{% else %}Criar Link{% endif %}
+            </button>
+            <a href="{% url 'dashboard:links_list' %}" class="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
