@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} - Megalink{% endblock %}
+
+{% block content %}
+    {% for section in sections %}
+        {% with data=section.data component=section.component_type %}
+            {% include section.template %}
+        {% endwith %}
+    {% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+    {% load static %}
+    <script src="{% static 'js/form-handler.js' %}"></script>
+{% endblock %}

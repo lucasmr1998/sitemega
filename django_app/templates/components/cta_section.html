@@ -1,0 +1,31 @@
+<section class="py-20 relative overflow-hidden" style="background-color: {{ data.bg_color|default:'#2323FA' }}">
+    <div class="absolute top-0 left-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+    <div class="absolute bottom-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full translate-x-1/3 translate-y-1/3"></div>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+        <h2 class="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">{{ data.heading }}</h2>
+        {% if data.subheading %}
+            <p class="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">{{ data.subheading }}</p>
+        {% endif %}
+
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            {% if data.primary_btn_text %}
+            <a href="{{ data.primary_btn_link|default:'#' }}" target="_blank"
+                class="inline-flex items-center justify-center bg-[{{ config.secondary_color }}] text-white font-bold text-lg py-4 px-10 rounded-full hover:bg-orange-600 transition shadow-lg hover:shadow-xl hover:-translate-y-1">
+                {% if data.primary_btn_icon %}<i class="{{ data.primary_btn_icon }} text-2xl mr-2"></i>{% endif %}
+                {{ data.primary_btn_text }}
+            </a>
+            {% endif %}
+            {% if data.secondary_btn_text %}
+            <a href="{{ data.secondary_btn_link|default:'#' }}"
+                class="inline-flex items-center justify-center bg-transparent border-2 border-white text-white font-bold text-lg py-4 px-10 rounded-full hover:bg-white/10 transition">
+                {{ data.secondary_btn_text }}
+            </a>
+            {% endif %}
+        </div>
+
+        {% if data.footnote %}
+            <p class="mt-8 text-sm text-blue-200 opacity-80">{{ data.footnote }}</p>
+        {% endif %}
+    </div>
+</section>

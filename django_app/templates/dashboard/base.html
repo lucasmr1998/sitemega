@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Painel{% endblock %} - MegaLink</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { DEFAULT: '#2323FA', dark: '#1a1ab8', light: '#4747ff' },
+                        sidebar: { bg: '#f8f9fa', hover: '#e9ecef', active: '#2323FA' },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .sidebar-link.active { color: #2323FA; font-weight: 600; background: #eef2ff; border-left: 3px solid #2323FA; }
+        .sidebar-link { border-left: 3px solid transparent; }
+        .sidebar-link:hover:not(.active) { background: #f1f5f9; }
+        .kpi-card { transition: all 0.2s; }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+        .table-row:hover { background: #f8fafc; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="font-sans bg-gray-50 text-gray-800 antialiased">
+
+    <!-- Top Navbar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 h-16">
+        <div class="flex items-center justify-between h-full px-6">
+            <!-- Logo + Brand -->
+            <div class="flex items-center gap-8">
+                <a href="{% url 'dashboard:index' %}" class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-brand rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-bolt text-white text-sm"></i>
+                    </div>
+                    <span class="text-lg font-bold text-gray-900">MegaLink</span>
+                </a>
+
+                <!-- Top Nav Links -->
+                <div class="hidden lg:flex items-center gap-1">
+                    <a href="{% url 'dashboard:index' %}" class="px-3 py-2 text-sm font-medium rounded-lg {% if nav_active == 'dashboard' %}bg-brand text-white{% else %}text-gray-600 hover:bg-gray-100{% endif %} transition">
+                        <i class="fa-solid fa-chart-line mr-1.5"></i> Dashboard
+                    </a>
+                    <a href="{% url 'dashboard:config' %}" class="px-3 py-2 text-sm font-medium rounded-lg {% if nav_active == 'config' %}bg-brand text-white{% else %}text-gray-600 hover:bg-gray-100{% endif %} transition">
+                        <i class="fa-solid fa-gear mr-1.5"></i> Configurações
+                    </a>
+                    <a href="{% url 'dashboard:leads_list' %}" class="px-3 py-2 text-sm font-medium rounded-lg {% if nav_active == 'leads' %}bg-brand text-white{% else %}text-gray-600 hover:bg-gray-100{% endif %} transition">
+                        <i class="fa-solid fa-users mr-1.5"></i> Leads
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Side -->
+            <div class="flex items-center gap-4">
+                <a href="{% url 'home' %}" target="_blank" class="text-sm text-gray-500 hover:text-brand transition" title="Ver site">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+                <div class="w-px h-6 bg-gray-200"></div>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-brand/10 text-brand rounded-full flex items-center justify-center text-sm font-bold">
+                        {{ user.username|first|upper }}
+                    </div>
+                    <span class="text-sm font-medium text-gray-700 hidden sm:block">{{ user.username }}</span>
+                </div>
+                <a href="{% url 'dashboard:logout' %}" class="text-gray-400 hover:text-red-500 transition text-sm" title="Sair">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex pt-16">
+        <!-- Sidebar -->
+        <aside class="fixed left-0 top-16 bottom-0 w-60 bg-white border-r border-gray-200 overflow-y-auto z-40">
+            <div class="py-6">
+                <div class="px-4 mb-2">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-3">Page Builder</span>
+                </div>
+                <nav class="space-y-0.5 px-3">
+                    <a href="{% url 'dashboard:pages_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'pages' %}active{% endif %}">
+                        <i class="fa-solid fa-file-lines w-4 text-center text-xs"></i> Páginas
+                    </a>
+                    <a href="{% url 'dashboard:components_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'components' %}active{% endif %}">
+                        <i class="fa-solid fa-puzzle-piece w-4 text-center text-xs"></i> Componentes
+                    </a>
+                </nav>
+
+                <div class="px-4 mt-6 mb-2">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-3">Conteúdo (legado)</span>
+                </div>
+                <nav class="space-y-0.5 px-3">
+                    <a href="{% url 'dashboard:banners_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'banners' %}active{% endif %}">
+                        <i class="fa-solid fa-images w-4 text-center text-xs"></i> Banners
+                    </a>
+                    <a href="{% url 'dashboard:plans_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'plans' %}active{% endif %}">
+                        <i class="fa-solid fa-wifi w-4 text-center text-xs"></i> Planos
+                    </a>
+                    <a href="{% url 'dashboard:energia' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'energia' %}active{% endif %}">
+                        <i class="fa-solid fa-bolt w-4 text-center text-xs"></i> Energia
+                    </a>
+                    <a href="{% url 'dashboard:rastreamento' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'rastreamento' %}active{% endif %}">
+                        <i class="fa-solid fa-location-dot w-4 text-center text-xs"></i> Rastreamento
+                    </a>
+                </nav>
+
+                <div class="px-4 mt-6 mb-2">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-3">Sistema</span>
+                </div>
+                <nav class="space-y-0.5 px-3">
+                    <a href="{% url 'dashboard:menus_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'menus' %}active{% endif %}">
+                        <i class="fa-solid fa-bars w-4 text-center text-xs"></i> Menus
+                    </a>
+                    <a href="{% url 'dashboard:footer_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 transition {% if sidebar_active == 'footer' %}active{% endif %}">
+                        <i class="fa-solid fa-table-columns w-4 text-center text-xs"></i> Rodapé
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-60 min-h-screen">
+            <div class="p-8">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium
+                            {% if message.tags == 'success' %}bg-green-50 text-green-700 border border-green-200
+                            {% elif message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+                            {% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

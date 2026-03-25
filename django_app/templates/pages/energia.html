@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Megalink - Mega Energia{% endblock %}
+
+{% block content %}
+    {% include "sections/energy_hero.html" %}
+    {% include "sections/energy_savings.html" %}
+    {% include "sections/energy_features.html" %}
+    {% include "sections/energy_steps.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/form-handler.js' %}"></script>
+    <script>
+        function toggleAccordion(id) {
+            const content = document.getElementById('faq-content-' + id);
+            const icon = document.getElementById('faq-icon-' + id);
+            content.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        }
+    </script>
+{% endblock %}

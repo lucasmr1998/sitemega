@@ -1,0 +1,174 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Editor - {{ page_obj.title }}{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <a href="{% url 'dashboard:pages_list' %}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand transition mb-2">
+            <i class="fa-solid fa-arrow-left text-xs"></i> Páginas
+        </a>
+        <div class="flex items-center gap-3">
+            <h1 class="text-2xl font-bold text-gray-900">{{ page_obj.title }}</h1>
+            {% if page_obj.status == 'published' %}
+                <span class="px-2 py-0.5 text-[10px] font-bold uppercase bg-green-100 text-green-700 rounded-full">Publicada</span>
+            {% else %}
+                <span class="px-2 py-0.5 text-[10px] font-bold uppercase bg-yellow-100 text-yellow-700 rounded-full">Rascunho</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="flex items-center gap-2">
+        {% if page_obj.status == 'published' %}
+        <a href="{{ page_obj.get_absolute_url }}" target="_blank" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2">
+            <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i> Ver no site
+        </a>
+        {% endif %}
+        <a href="{% url 'dashboard:page_edit' pk=page_obj.pk %}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2">
+            <i class="fa-solid fa-gear text-xs"></i> Configurações
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Sections List (3/4) -->
+    <div class="lg:col-span-3">
+        <div id="sections-list" class="space-y-3">
+            {% for section in sections %}
+            <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4 group hover:border-brand/30 transition" data-id="{{ section.pk }}">
+                <!-- Drag Handle -->
+                <div class="cursor-grab text-gray-300 hover:text-gray-500 transition drag-handle">
+                    <i class="fa-solid fa-grip-vertical"></i>
+                </div>
+
+                <!-- Icon -->
+                <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center flex-shrink-0">
+                    <i class="{{ section.component_type.icon }} text-sm"></i>
+                </div>
+
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium text-sm text-gray-900">{{ section.component_type.name }}</span>
+                        {% if not section.is_active %}
+                            <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">Oculto</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-xs text-gray-400 truncate mt-0.5">
+                        {{ section.component_type.name }} · #{{ section.order }}
+                    </p>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition">
+                    <a href="{% url 'dashboard:component_edit' pk=section.pk %}"
+                        class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition text-xs" title="Editar">
+                        <i class="fa-solid fa-pen"></i>
+                    </a>
+                    <form method="post" action="{% url 'dashboard:component_delete' pk=section.pk %}" class="inline"
+                          onsubmit="return confirm('Remover este componente?')">
+                        {% csrf_token %}
+                        <button type="submit" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition text-xs" title="Remover">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-16 bg-white rounded-xl border border-dashed border-gray-300">
+                <i class="fa-solid fa-puzzle-piece text-4xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500 text-sm">Nenhum componente adicionado.</p>
+                <p class="text-gray-400 text-xs mt-1">Escolha um componente ao lado para começar.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Component Library (1/4) -->
+    <div class="lg:col-span-1">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 sticky top-24">
+            <h3 class="text-sm font-bold text-gray-900 mb-3">Adicionar Componente</h3>
+            <div class="space-y-1.5">
+                {% for ct in component_types %}
+                <form method="post" action="{% url 'dashboard:component_add' pk=page_obj.pk %}" class="inline w-full">
+                    {% csrf_token %}
+                    <input type="hidden" name="component_type" value="{{ ct.pk }}">
+                    <button type="submit" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-brand/5 transition flex items-center gap-3 group/btn">
+                        <div class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center group-hover/btn:bg-brand/10 group-hover/btn:text-brand transition text-xs">
+                            <i class="{{ ct.icon }}"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-medium text-gray-700 group-hover/btn:text-brand transition">{{ ct.name }}</div>
+                            {% if ct.description %}
+                                <div class="text-[10px] text-gray-400 truncate">{{ ct.description }}</div>
+                            {% endif %}
+                        </div>
+                        <i class="fa-solid fa-plus text-[10px] text-gray-300 group-hover/btn:text-brand transition"></i>
+                    </button>
+                </form>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Simple drag-and-drop reorder
+document.addEventListener('DOMContentLoaded', () => {
+    const list = document.getElementById('sections-list');
+    if (!list) return;
+
+    let dragItem = null;
+
+    list.querySelectorAll('[data-id]').forEach(el => {
+        const handle = el.querySelector('.drag-handle');
+        if (!handle) return;
+
+        handle.addEventListener('mousedown', () => {
+            el.draggable = true;
+        });
+
+        el.addEventListener('dragstart', (e) => {
+            dragItem = el;
+            el.classList.add('opacity-50');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        el.addEventListener('dragend', () => {
+            el.draggable = false;
+            el.classList.remove('opacity-50');
+            saveOrder();
+        });
+
+        el.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (dragItem && dragItem !== el) {
+                const rect = el.getBoundingClientRect();
+                const mid = rect.top + rect.height / 2;
+                if (e.clientY < mid) {
+                    list.insertBefore(dragItem, el);
+                } else {
+                    list.insertBefore(dragItem, el.nextSibling);
+                }
+            }
+        });
+    });
+
+    function saveOrder() {
+        const items = list.querySelectorAll('[data-id]');
+        const order = [];
+        items.forEach((el, i) => {
+            order.push({ id: parseInt(el.dataset.id), order: i });
+        });
+
+        fetch('{% url "dashboard:component_reorder" pk=page_obj.pk %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify(order),
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Megalink{% endblock %}</title>
+
+    <!-- Google Fonts: Barlow -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- CSS Global -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Barlow', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            DEFAULT: '{{ config.primary_color }}',
+                            dark: '{{ config.primary_dark_color }}',
+                            darker: '#000073',
+                            mid: '#0000C6',
+                            light: '#0000FF',
+                        },
+                        orange: {
+                            DEFAULT: '{{ config.secondary_color }}',
+                            dark: '#DC5A05',
+                            light: '#F57D05',
+                            lighter: '#ED8905',
+                            golden: '#FFA72D',
+                        },
+                        secondary: {
+                            DEFAULT: '{{ config.primary_color }}',
+                            dark: '{{ config.primary_dark_color }}',
+                            light: '#0000FF',
+                        },
+                        accent: {
+                            DEFAULT: '{{ config.accent_color }}',
+                            dark: '#059669',
+                        },
+                        pink: {
+                            500: '#E4405F',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="font-sans antialiased text-black bg-white">
+    {% include "includes/header.html" %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include "includes/footer.html" %}
+
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

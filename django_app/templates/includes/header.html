@@ -1,0 +1,68 @@
+{% load static %}
+<header class="sticky top-0 z-50 shadow-lg bg-white">
+    <div class="bg-white border-b border-gray-100 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex-shrink-0">
+                    <a href="{% url 'home' %}" class="flex items-center gap-2">
+                        {% if config.logo %}
+                            <img src="{{ config.logo.url }}" alt="{{ config.logo_alt_text }}"
+                                class="h-10 w-auto object-contain">
+                        {% else %}
+                            <div class="w-10 h-10 bg-[{{ config.secondary_color }}] rounded-full flex items-center justify-center text-white">
+                                <i class="fa-solid fa-face-smile text-2xl"></i>
+                            </div>
+                            <span class="text-2xl font-bold text-[{{ config.primary_color }}] tracking-tight">
+                                {{ config.company_name }}
+                            </span>
+                        {% endif %}
+                    </a>
+                </div>
+
+                <!-- Desktop Navigation -->
+                <nav class="hidden lg:flex items-center space-x-0 h-full">
+                    {% for menu in menus %}
+                        <a href="{{ menu.link }}"
+                            class="px-6 h-full font-bold text-sm uppercase tracking-wide transition flex items-center gap-1 focus:outline-none text-gray-700 hover:bg-gray-50 hover:text-[{{ config.primary_color }}] border-b-4 border-transparent">
+                            {{ menu.title }}
+                        </a>
+                    {% endfor %}
+                </nav>
+
+                <!-- Action Buttons & Mobile Toggle -->
+                <div class="flex items-center space-x-4">
+                    <a href="#" class="hidden lg:flex text-gray-700 hover:text-[{{ config.primary_color }}] font-medium items-center">
+                        <i class="fa-solid fa-magnifying-glass mr-1"></i>
+                    </a>
+                    <button id="mobile-menu-btn" class="lg:hidden text-2xl text-[{{ config.primary_color }}] cursor-pointer relative z-50">
+                        <i class="fa-solid fa-bars cursor-pointer"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="lg:hidden py-4 border-t border-gray-100 hidden absolute w-full bg-white shadow-xl z-50 left-0 top-full">
+            <nav class="flex flex-col">
+                {% for menu in menus %}
+                    <a href="{{ menu.link }}"
+                        class="block px-6 py-3 text-gray-700 font-bold uppercase text-sm hover:bg-gray-50 hover:text-[{{ config.primary_color }}] transition border-b border-gray-50 last:border-0">
+                        {{ menu.title }}
+                    </a>
+                {% endfor %}
+
+                <div class="px-6 py-4 bg-gray-50 mt-2 space-y-3">
+                    {% if config.assine_ja_enabled %}
+                        <a href="{{ config.assine_ja_link }}"
+                            class="block text-center w-full bg-[{{ config.secondary_color }}] text-white font-bold py-2 rounded-lg">Assine já</a>
+                    {% endif %}
+                    {% if config.area_cliente_enabled %}
+                        <a href="{{ config.area_cliente_link }}"
+                            class="block text-center w-full border border-[{{ config.primary_color }}] text-[{{ config.primary_color }}] font-bold py-2 rounded-lg">Área do cliente</a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+    </div>
+</header>

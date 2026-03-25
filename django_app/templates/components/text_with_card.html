@@ -1,0 +1,46 @@
+<section class="py-16 bg-white overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+                <h2 class="text-4xl md:text-5xl font-bold mb-6 leading-tight text-[{{ config.primary_color }}]">
+                    {{ data.heading }}
+                    {% if data.heading_highlight %}
+                        <br><span class="text-[{{ config.secondary_color }}]">{{ data.heading_highlight }}</span>
+                    {% endif %}
+                </h2>
+                {% if data.description %}
+                    <p class="text-lg text-gray-600 leading-relaxed mb-8">{{ data.description }}</p>
+                {% endif %}
+                {% if data.cta_text %}
+                    <a href="{{ data.cta_link|default:'#' }}" class="inline-flex items-center bg-[{{ config.secondary_color }}] text-white font-bold py-3 px-8 rounded-lg hover:bg-orange-600 transition shadow-md group">
+                        {{ data.cta_text }}
+                        <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                {% endif %}
+            </div>
+
+            <div class="flex justify-center lg:justify-end">
+                <div class="bg-gray-50 rounded-[2rem] p-10 max-w-md w-full shadow-lg relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-[{{ config.primary_color }}] opacity-10 rounded-bl-[4rem]"></div>
+                    <div class="mb-8">
+                        <div class="w-20 h-20 rounded-2xl bg-[{{ config.primary_color }}] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                            <i class="{{ data.card_icon|default:'fa-solid fa-bolt' }} text-3xl text-white"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">{{ data.card_title }}</h3>
+                    <div class="w-12 h-1 bg-[{{ config.secondary_color }}] mb-6 rounded-full"></div>
+                    {% if data.card_items %}
+                    <ul class="space-y-4 mb-8">
+                        {% for item in data.card_items %}
+                        <li class="flex items-center text-gray-600">
+                            <i class="fa-solid fa-check-circle text-[{{ config.primary_color }}] mr-3 text-lg"></i>
+                            <span>{{ item }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

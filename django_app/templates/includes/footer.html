@@ -1,0 +1,84 @@
+{% load static %}
+<footer class="bg-gray-900 text-gray-400 font-sans text-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {% for col in footer_columns %}
+                <div>
+                    <h3 class="text-white font-bold mb-6 text-base">{{ col.title }}</h3>
+                    <ul class="space-y-4">
+                        {% for link in col.links.all %}
+                            <li>
+                                <a href="{{ link.url }}"
+                                   {% if link.open_new_tab %}target="_blank"{% endif %}
+                                   class="hover:text-white transition">{{ link.title }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
+
+            <!-- Redes Sociais (always last column) -->
+            <div>
+                <h3 class="text-white font-bold mb-6 text-base">Redes sociais</h3>
+                <div class="flex items-center space-x-3 mb-6">
+                    {% if config.facebook_url %}
+                    <a href="{{ config.facebook_url }}" target="_blank"
+                        class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-[{{ config.secondary_color }}] hover:text-white transition text-gray-400">
+                        <i class="fa-brands fa-facebook-f"></i>
+                    </a>
+                    {% endif %}
+                    {% if config.instagram_url %}
+                    <a href="{{ config.instagram_url }}" target="_blank"
+                        class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-[{{ config.secondary_color }}] hover:text-white transition text-gray-400">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                    {% endif %}
+                    {% if config.linkedin_url %}
+                    <a href="{{ config.linkedin_url }}" target="_blank"
+                        class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-[{{ config.secondary_color }}] hover:text-white transition text-gray-400">
+                        <i class="fa-brands fa-linkedin-in"></i>
+                    </a>
+                    {% endif %}
+                    {% if config.youtube_url %}
+                    <a href="{{ config.youtube_url }}" target="_blank"
+                        class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-[{{ config.secondary_color }}] hover:text-white transition text-gray-400">
+                        <i class="fa-brands fa-youtube"></i>
+                    </a>
+                    {% endif %}
+                </div>
+
+                {% if config.whatsapp_number %}
+                <a href="https://wa.me/{{ config.whatsapp_number }}" target="_blank"
+                    class="inline-flex items-center justify-center bg-[{{ config.secondary_color }}] text-white font-bold rounded-lg px-6 py-3 hover:bg-orange-600 transition w-full md:w-auto">
+                    <i class="fa-brands fa-whatsapp text-xl mr-2"></i>
+                    WhatsApp
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="border-t border-gray-800 bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6 md:gap-0">
+                <div class="flex items-center space-x-4">
+                    <a href="{{ config.footer_terms_url }}" class="hover:text-white transition">Termos de uso</a>
+                    <span class="text-gray-600">|</span>
+                    <a href="{{ config.footer_privacy_url }}" class="hover:text-white transition">Política de Privacidade</a>
+                </div>
+
+                <div class="flex-shrink-0">
+                    {% if config.logo %}
+                        <img src="{{ config.logo.url }}" alt="{{ config.company_name }}"
+                            class="h-8 md:h-10 opacity-80 hover:opacity-100 transition">
+                    {% endif %}
+                </div>
+
+                <div class="text-right">
+                    <p class="text-gray-500 text-xs">{{ config.footer_copyright }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>

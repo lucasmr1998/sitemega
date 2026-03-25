@@ -1,0 +1,24 @@
+<section class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            {% if data.tag %}
+                <span class="text-[{{ config.primary_color }}] bg-blue-50 px-3 py-1 rounded-full text-xs font-bold uppercase mb-4 inline-block">{{ data.tag }}</span>
+            {% endif %}
+            <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">{{ data.heading }}</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {% for item in data.items %}
+            <div class="bg-gray-50 rounded-2xl p-6 hover:-translate-y-1 transition duration-300 group">
+                {% if item.icon %}
+                <div class="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-[{{ config.primary_color }}] text-xl mb-4 group-hover:bg-[{{ config.primary_color }}] group-hover:text-white transition-colors">
+                    <i class="{{ item.icon }}"></i>
+                </div>
+                {% endif %}
+                <h3 class="text-lg font-bold text-gray-900 mb-2">{{ item.title }}</h3>
+                <p class="text-sm text-gray-600 leading-relaxed">{{ item.description }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>

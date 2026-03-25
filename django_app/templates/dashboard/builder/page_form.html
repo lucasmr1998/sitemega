@@ -1,0 +1,76 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{% if page_obj %}Editar{% else %}Nova{% endif %} Página{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <a href="{% url 'dashboard:pages_list' %}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand transition mb-3">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Voltar
+    </a>
+    <h1 class="text-2xl font-bold text-gray-900">{% if page_obj %}Editar Página{% else %}Nova Página{% endif %}</h1>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 p-6 max-w-2xl">
+    <form method="post">
+        {% csrf_token %}
+        <div class="space-y-5">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Título <span class="text-red-400">*</span></label>
+                <input type="text" name="title" value="{{ page_obj.title|default:'' }}" required
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none transition"
+                    placeholder="Black Friday 2026">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1.5">URL (slug) <span class="text-red-400">*</span></label>
+                <div class="flex items-center gap-0">
+                    <span class="text-sm text-gray-400 bg-gray-50 border border-r-0 border-gray-300 rounded-l-lg px-3 py-2.5">/p/</span>
+                    <input type="text" name="slug" value="{{ page_obj.slug|default:'' }}" required
+                        class="flex-1 border border-gray-300 rounded-r-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none transition"
+                        placeholder="black-friday-2026">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Meta descrição</label>
+                <input type="text" name="meta_description" value="{{ page_obj.meta_description|default:'' }}"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand outline-none transition"
+                    placeholder="Descrição para SEO (até 160 caracteres)">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Status</label>
+                <select name="status" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand outline-none transition bg-white">
+                    <option value="draft" {% if page_obj.status == 'draft' %}selected{% endif %}>Rascunho</option>
+                    <option value="published" {% if page_obj.status == 'published' %}selected{% endif %}>Publicada</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_homepage" {% if page_obj.is_homepage %}checked{% endif %}
+                        class="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand">
+                    <span class="text-sm text-gray-600">Página inicial</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="show_header" {% if page_obj.show_header or not page_obj %}checked{% endif %}
+                        class="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand">
+                    <span class="text-sm text-gray-600">Mostrar header</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="show_footer" {% if page_obj.show_footer or not page_obj %}checked{% endif %}
+                        class="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand">
+                    <span class="text-sm text-gray-600">Mostrar footer</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 mt-8 pt-6 border-t border-gray-100">
+            <button type="submit" class="bg-brand text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-dark transition">
+                {% if page_obj %}Salvar{% else %}Criar Página{% endif %}
+            </button>
+            <a href="{% url 'dashboard:pages_list' %}" class="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

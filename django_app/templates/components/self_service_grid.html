@@ -1,0 +1,40 @@
+<section class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">{{ data.heading|default:'Autoatendimento' }}</h2>
+            {% if data.subheading %}<p class="text-gray-500 text-lg">{{ data.subheading }}</p>{% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for item in data.items %}
+                {% if item.highlight %}
+                <a href="{{ item.link|default:'#' }}" class="bg-[{{ config.primary_color }}] rounded-2xl p-8 transition hover:bg-blue-800 group flex items-start gap-4 shadow-lg">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-white text-2xl"><i class="{{ item.icon }}"></i></div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xl font-bold text-white">{{ item.title }}</h3>
+                            <i class="fa-solid fa-chevron-right text-white text-sm"></i>
+                        </div>
+                        <p class="text-blue-100 text-sm">{{ item.description }}</p>
+                    </div>
+                </a>
+                {% else %}
+                <a href="{{ item.link|default:'#' }}" class="bg-[#F8F9FA] rounded-2xl p-8 transition hover:bg-[#EEF2FF] group flex items-start gap-4 border border-transparent hover:border-blue-100">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-[#E0E7FF] rounded-xl flex items-center justify-center text-[{{ config.primary_color }}] text-2xl group-hover:bg-[{{ config.primary_color }}] group-hover:text-white transition-colors"><i class="{{ item.icon }}"></i></div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xl font-bold text-gray-900">{{ item.title }}</h3>
+                            <i class="fa-solid fa-chevron-right text-gray-400 group-hover:text-[{{ config.primary_color }}] text-sm transition"></i>
+                        </div>
+                        <p class="text-gray-500 text-sm">{{ item.description }}</p>
+                    </div>
+                </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</section>

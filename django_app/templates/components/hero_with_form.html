@@ -1,0 +1,85 @@
+{% load static %}
+<section class="relative text-white py-16 md:py-24 overflow-hidden" style="background-color: {{ data.bg_color|default:'#2323FA' }}">
+    {% if data.bg_image %}
+    <div class="absolute inset-0 z-0">
+        <img src="{{ data.bg_image }}" class="w-full h-full object-cover opacity-30" alt="">
+    </div>
+    {% endif %}
+
+    <div class="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-[#0000C6] to-transparent opacity-50 blur-3xl rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+        <div class="flex flex-col lg:flex-row items-center justify-between gap-12">
+            <div class="w-full lg:w-1/2">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6">{{ data.heading }}</h1>
+                {% if data.subheading %}
+                    <p class="text-lg md:text-xl text-gray-300 mb-8 max-w-lg">{{ data.subheading }}</p>
+                {% endif %}
+                {% if data.badges %}
+                <div class="flex items-center gap-4 text-sm text-blue-200">
+                    {% for badge in data.badges %}
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-check text-white"></i> {{ badge }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if data.cta_text %}
+                <div class="mt-8">
+                    <a href="{{ data.cta_link|default:'#' }}" class="inline-flex items-center bg-white text-[{{ data.bg_color|default:'#2323FA' }}] font-bold text-lg py-4 px-8 rounded-full hover:bg-gray-100 transition shadow-lg">
+                        {{ data.cta_text }} <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="w-full lg:w-1/3">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">{{ data.form_title|default:'Preencha seus dados' }}</h3>
+                    {% if data.form_subtitle %}
+                        <p class="text-sm text-gray-500 mb-6">{{ data.form_subtitle }}</p>
+                    {% endif %}
+
+                    <form action="#" class="space-y-4" id="leadForm_{{ data.form_source|default:'geral' }}">
+                        {% if data.form_fields %}
+                            {% for field in data.form_fields %}
+                                {% if field.half_width %}<div class="grid grid-cols-2 gap-4"><div>{% endif %}
+                                <div{% if not field.half_width %} class="w-full"{% endif %}>
+                                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">{{ field.label }}</label>
+                                    {% if field.type == 'select' %}
+                                        <select name="{{ field.name }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[{{ data.bg_color|default:'#2323FA' }}] outline-none transition appearance-none bg-white text-gray-800">
+                                            <option>{{ field.placeholder|default:'Selecione' }}</option>
+                                            {% for opt in field.options %}<option>{{ opt }}</option>{% endfor %}
+                                        </select>
+                                    {% else %}
+                                        <input type="{{ field.type|default:'text' }}" name="{{ field.name }}"
+                                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[{{ data.bg_color|default:'#2323FA' }}] outline-none transition text-gray-800"
+                                            placeholder="{{ field.placeholder|default:'' }}">
+                                    {% endif %}
+                                </div>
+                                {% if field.half_width %}</div>{% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Nome</label>
+                                <input type="text" name="nome" class="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none transition text-gray-800" placeholder="Seu nome">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">E-mail</label>
+                                <input type="email" name="email" class="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none transition text-gray-800" placeholder="nome@email.com">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Celular</label>
+                                <input type="tel" name="celular" class="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none transition text-gray-800" placeholder="(00) 00000-0000">
+                            </div>
+                        {% endif %}
+
+                        <button type="submit" class="w-full text-white font-bold py-3 rounded-lg hover:opacity-90 transition shadow-lg mt-4" style="background-color: {{ data.bg_color|default:'#2323FA' }}">
+                            Enviar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

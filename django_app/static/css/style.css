@@ -1,0 +1,57 @@
+/* Global Vars copied from globals.css */
+:root {
+    --color-primary: #2323FA;
+    --color-primary-dark: #1E1EC8;
+    --color-primary-mid: #2A2AFF;
+    --color-secondary: #FF6905;
+    --color-accent: #10B981;
+}
+
+/* Custom Utility Classes */
+.bg-primary {
+    background-color: var(--color-primary) !important;
+}
+
+.bg-primary-dark {
+    background-color: var(--color-primary-dark) !important;
+}
+
+.bg-primary-mid {
+    background-color: var(--color-primary-mid) !important;
+}
+
+.bg-secondary {
+    background-color: var(--color-secondary) !important;
+}
+
+.bg-accent {
+    background-color: var(--color-accent) !important;
+}
+
+.text-primary {
+    color: var(--color-primary) !important;
+}
+
+.text-primary-dark {
+    color: var(--color-primary-dark) !important;
+}
+
+.text-secondary {
+    color: var(--color-secondary) !important;
+}
+
+.text-accent {
+    color: var(--color-accent) !important;
+}
+
+.border-primary {
+    border-color: var(--color-primary) !important;
+}
+
+.border-secondary {
+    border-color: var(--color-secondary) !important;
+}
+
+html {
+    scroll-behavior: smooth;
+}

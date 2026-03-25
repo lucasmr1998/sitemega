@@ -1,0 +1,21 @@
+{% load static %}
+<section class="relative text-white py-20 lg:py-32 overflow-hidden" style="background-color: {{ data.bg_color|default:'#2323FA' }}">
+    {% if data.image %}
+    <div class="absolute inset-0 z-0">
+        <img src="{{ data.image }}" class="w-full h-full object-cover opacity-20" alt="">
+    </div>
+    {% endif %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+        <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6">{{ data.title }}</h1>
+        {% if data.subtitle %}
+            <p class="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto">{{ data.subtitle }}</p>
+        {% endif %}
+        {% if data.cta_text %}
+            <a href="{{ data.cta_link|default:'#' }}"
+                class="inline-flex items-center justify-center bg-white text-[{{ data.bg_color|default:'#2323FA' }}] font-bold text-lg py-4 px-10 rounded-full hover:bg-gray-100 transition shadow-lg">
+                {{ data.cta_text }}
+                <i class="fa-solid fa-arrow-right ml-2"></i>
+            </a>
+        {% endif %}
+    </div>
+</section>

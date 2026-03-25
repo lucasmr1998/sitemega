@@ -1,0 +1,232 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Editar {{ comp.component_type.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <a href="{% url 'dashboard:page_editor' pk=page_obj.pk %}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand transition mb-3">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Voltar ao editor
+    </a>
+    <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
+            <i class="{{ comp.component_type.icon }}"></i>
+        </div>
+        <div>
+            <h1 class="text-xl font-bold text-gray-900">{{ comp.component_type.name }}</h1>
+            <p class="text-xs text-gray-400">{{ page_obj.title }} · Ordem #{{ comp.order }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 p-6 max-w-3xl">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- Fields rendered by JS from schema -->
+        <div id="form-fields" class="space-y-5"></div>
+
+        <!-- Component settings -->
+        <div class="mt-6 pt-6 border-t border-gray-100 space-y-4">
+            <h4 class="text-xs font-semibold text-gray-600 uppercase">Configurações do componente</h4>
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="is_active" {% if comp.is_active %}checked{% endif %}
+                    class="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand">
+                <span class="text-sm text-gray-600">Componente ativo (visível no site)</span>
+            </label>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Classes CSS extras</label>
+                <input type="text" name="css_classes" value="{{ comp.css_classes|default:'' }}"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand outline-none transition"
+                    placeholder="Ex: py-24 bg-gray-100">
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 mt-8 pt-6 border-t border-gray-100">
+            <button type="submit" class="bg-brand text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-dark transition">
+                Salvar
+            </button>
+            <a href="{% url 'dashboard:page_editor' pk=page_obj.pk %}" class="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+const compData = {{ comp.data|safe }};
+const schema = {{ schema|safe }};
+const container = document.getElementById('form-fields');
+const repeaterCounters = {};
+
+const cls = {
+    label: 'block text-xs font-semibold text-gray-600 uppercase mb-1.5',
+    input: 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none transition',
+    textarea: 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand outline-none transition resize-y',
+    select: 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand outline-none transition bg-white',
+    subLabel: 'block text-[10px] font-semibold text-gray-500 uppercase mb-1',
+    subInput: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-brand',
+};
+
+function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Build all fields from schema
+schema.forEach(field => {
+    const val = compData[field.name];
+    const wrap = document.createElement('div');
+
+    if (field.type === 'repeater') {
+        wrap.className = 'border border-gray-200 rounded-xl p-4';
+        wrap.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+                <label class="${cls.label}">${esc(field.label)}</label>
+                <button type="button" class="text-xs text-brand font-medium hover:underline flex items-center gap-1"
+                    onclick="addRepeaterItem('${field.name}')">
+                    <i class="fa-solid fa-plus text-[10px]"></i> Adicionar
+                </button>
+            </div>
+            <div id="repeater_${field.name}" class="space-y-3"></div>`;
+        container.appendChild(wrap);
+
+        // Populate existing items
+        const items = Array.isArray(val) ? val : [];
+        items.forEach((item, idx) => {
+            addRepeaterItemWithData(field.name, field.fields, idx, item);
+        });
+
+    } else if (field.type === 'textarea' || field.type === 'richtext') {
+        const v = val || '';
+        wrap.innerHTML = `
+            <label class="${cls.label}">${esc(field.label)}</label>
+            <textarea name="${field.name}" rows="3" class="${cls.textarea}">${esc(v)}</textarea>`;
+        container.appendChild(wrap);
+
+    } else if (field.type === 'list') {
+        const v = Array.isArray(val) ? val.join('\n') : (val || '');
+        wrap.innerHTML = `
+            <label class="${cls.label}">${esc(field.label)}</label>
+            <textarea name="${field.name}" rows="4" placeholder="Um item por linha" class="${cls.textarea}">${esc(v)}</textarea>
+            <p class="text-xs text-gray-400 mt-1">Um item por linha</p>`;
+        container.appendChild(wrap);
+
+    } else if (field.type === 'checkbox') {
+        const checked = val ? 'checked' : '';
+        wrap.innerHTML = `
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="${field.name}" ${checked}
+                    class="w-5 h-5 rounded border-gray-300 text-brand focus:ring-brand">
+                <span class="text-sm text-gray-600">${esc(field.label)}</span>
+            </label>`;
+        container.appendChild(wrap);
+
+    } else if (field.type === 'color') {
+        const v = val || field.default || '#2323FA';
+        wrap.innerHTML = `
+            <label class="${cls.label}">${esc(field.label)}</label>
+            <div class="flex items-center gap-2">
+                <input type="color" name="${field.name}" value="${esc(v)}"
+                    class="w-10 h-10 rounded border border-gray-300 cursor-pointer"
+                    oninput="this.nextElementSibling.value = this.value">
+                <input type="text" value="${esc(v)}"
+                    class="${cls.input}"
+                    oninput="this.previousElementSibling.value = this.value">
+            </div>`;
+        container.appendChild(wrap);
+
+    } else if (field.type === 'number') {
+        const v = val !== undefined && val !== '' ? val : (field.default || 0);
+        wrap.innerHTML = `
+            <label class="${cls.label}">${esc(field.label)}</label>
+            <input type="number" name="${field.name}" value="${esc(v)}" class="${cls.input}">`;
+        container.appendChild(wrap);
+
+    } else if (field.type === 'select') {
+        const opts = (field.options || []).map(o =>
+            `<option value="${esc(o)}" ${val === o ? 'selected' : ''}>${esc(o)}</option>`
+        ).join('');
+        wrap.innerHTML = `
+            <label class="${cls.label}">${esc(field.label)}</label>
+            <select name="${field.name}" class="${cls.select}">${opts}</select>`;
+        container.appendChild(wrap);
+
+    } else {
+        // text, url, image
+        const v = val || '';
+        const required = field.required ? '<span class="text-red-400">*</span>' : '';
+        wrap.innerHTML = `
+            <label class="${cls.label}">${esc(field.label)} ${required}</label>
+            <input type="${field.type || 'text'}" name="${field.name}" value="${esc(v)}" class="${cls.input}">`;
+        container.appendChild(wrap);
+    }
+});
+
+// ─── Repeater helpers ────────────────────────────────────────────────────────
+
+const repeaterSchemas = {};
+schema.forEach(f => { if (f.type === 'repeater') repeaterSchemas[f.name] = f.fields; });
+
+function addRepeaterItem(fieldName) {
+    const subFields = repeaterSchemas[fieldName];
+    if (!subFields) return;
+    const idx = repeaterCounters[fieldName] || 0;
+    addRepeaterItemWithData(fieldName, subFields, idx, {});
+    repeaterCounters[fieldName] = idx + 1;
+}
+
+function addRepeaterItemWithData(fieldName, subFields, idx, itemData) {
+    const rc = document.getElementById('repeater_' + fieldName);
+    if (!rc) return;
+
+    const div = document.createElement('div');
+    div.className = 'bg-gray-50 rounded-lg p-4 space-y-3 relative';
+
+    let html = `<div class="flex items-center justify-between mb-1">
+        <span class="text-[10px] font-bold text-gray-400 uppercase">#${idx + 1}</span>
+        <button type="button" onclick="this.closest('.bg-gray-50').remove()"
+            class="w-6 h-6 rounded bg-red-50 text-red-400 hover:bg-red-100 flex items-center justify-center text-xs">
+            <i class="fa-solid fa-times"></i>
+        </button>
+    </div>`;
+
+    subFields.forEach(sf => {
+        const val = itemData[sf.name];
+        const inputName = `${fieldName}__${idx}__${sf.name}`;
+
+        if (sf.type === 'checkbox') {
+            const checked = val ? 'checked' : '';
+            html += `<label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="${inputName}" ${checked} class="w-4 h-4 rounded border-gray-300 text-brand">
+                <span class="text-xs text-gray-600">${esc(sf.label)}</span>
+            </label>`;
+        } else if (sf.type === 'list') {
+            const listVal = Array.isArray(val) ? val.join('\n') : (val || '');
+            html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
+                <textarea name="${inputName}" rows="3" class="${cls.subInput} resize-y" placeholder="Um por linha">${esc(listVal)}</textarea></div>`;
+        } else if (sf.type === 'textarea') {
+            html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
+                <textarea name="${inputName}" rows="2" class="${cls.subInput} resize-y">${esc(val || '')}</textarea></div>`;
+        } else if (sf.type === 'select') {
+            const opts = (sf.options || []).map(o =>
+                `<option value="${esc(o)}" ${val === o ? 'selected' : ''}>${esc(o)}</option>`
+            ).join('');
+            html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
+                <select name="${inputName}" class="${cls.subInput} bg-white">${opts}</select></div>`;
+        } else if (sf.type === 'color') {
+            const cv = val || sf.default || '#2323FA';
+            html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
+                <div class="flex items-center gap-2">
+                    <input type="color" name="${inputName}" value="${esc(cv)}" class="w-8 h-8 rounded border border-gray-200 cursor-pointer" oninput="this.nextElementSibling.value=this.value">
+                    <input type="text" value="${esc(cv)}" class="${cls.subInput}" oninput="this.previousElementSibling.value=this.value">
+                </div></div>`;
+        } else {
+            html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
+                <input type="${sf.type || 'text'}" name="${inputName}" value="${esc(val || '')}" class="${cls.subInput}"></div>`;
+        }
+    });
+
+    div.innerHTML = html;
+    rc.appendChild(div);
+    repeaterCounters[fieldName] = Math.max(repeaterCounters[fieldName] || 0, idx + 1);
+}
+</script>
+{% endblock %}

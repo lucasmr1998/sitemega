@@ -1,0 +1,74 @@
+<section class="py-20 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            {% if data.tag %}
+                <span class="text-[{{ config.primary_color }}] font-bold tracking-wider uppercase text-sm mb-2 block">{{ data.tag }}</span>
+            {% endif %}
+            <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">{{ data.heading }}</h2>
+        </div>
+
+        <div class="flex flex-col md:flex-row items-center gap-16">
+            <div class="w-full md:w-1/2">
+                <h3 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">{{ data.content_title }}</h3>
+                <p class="text-gray-600 mb-8 leading-relaxed">{{ data.content_body }}</p>
+                {% if data.checkmarks %}
+                <div class="grid grid-cols-2 gap-4">
+                    {% for check in data.checkmarks %}
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
+                            <i class="fa-solid fa-check text-xs"></i>
+                        </div>
+                        <span class="text-sm font-semibold text-gray-800">{{ check }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="w-full md:w-1/2">
+                <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
+                    <div class="mb-6 border-b border-gray-100 pb-4">
+                        <span class="inline-block py-1 px-3 rounded-full bg-green-100 text-green-700 text-xs font-semibold mb-2">Simulação Rápida</span>
+                        <h4 class="text-2xl font-bold text-gray-900">Quanto você gasta de luz?</h4>
+                    </div>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-gray-600 mb-2">Valor médio da conta</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 font-semibold text-lg">R$</span>
+                                </div>
+                                <input type="number" id="calcBillValue" class="block w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xl font-bold text-gray-900 focus:ring-2 focus:ring-[{{ config.primary_color }}] outline-none" value="500" oninput="calcSavings()">
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-br from-[{{ config.primary_color }}] to-blue-700 rounded-2xl p-6 text-white text-center shadow-lg">
+                            <p class="text-blue-100 text-xs font-bold uppercase mb-1">Sua nova estimativa</p>
+                            <div class="text-4xl font-extrabold mb-4" id="calcNewBill">R$ 400,00</div>
+                            <div class="border-t border-white/20 pt-4 grid grid-cols-2 gap-4">
+                                <div><p class="text-[10px] text-blue-100 uppercase font-semibold">Economia Mensal</p><p class="font-bold text-lg" id="calcMonthly">R$ 100,00</p></div>
+                                <div><p class="text-[10px] text-white/80 uppercase font-semibold">Economia Anual</p><p class="font-bold text-lg" id="calcYearly">R$ 1.200,00</p></div>
+                            </div>
+                        </div>
+                        {% if data.cta_text %}
+                        <button onclick="window.location.href='#'" class="w-full bg-white text-[{{ config.primary_color }}] border-2 border-[{{ config.primary_color }}] font-bold py-3 rounded-xl hover:bg-blue-50 transition flex items-center justify-center gap-2">
+                            {{ data.cta_text }} <i class="fa-solid fa-arrow-right text-sm"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    <script>
+                    function calcFmt(v){return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v)}
+                    function calcSavings(){
+                        let v=parseFloat(document.getElementById('calcBillValue').value)||0;
+                        let pct={{ data.savings_percentage|default:20 }}/100;
+                        let m=v*pct,n=v-m,y=m*12;
+                        document.getElementById('calcNewBill').textContent=calcFmt(n);
+                        document.getElementById('calcMonthly').textContent=calcFmt(m);
+                        document.getElementById('calcYearly').textContent=calcFmt(y);
+                    }
+                    document.addEventListener('DOMContentLoaded',calcSavings);
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

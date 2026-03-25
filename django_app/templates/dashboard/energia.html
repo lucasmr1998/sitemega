@@ -1,0 +1,105 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Energia{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">Página Energia</h1>
+    <p class="text-gray-500 text-sm mt-1">Gerencie as seções da página de energia.</p>
+</div>
+
+<!-- Hero -->
+<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6 max-w-3xl">
+    <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-image text-brand text-sm"></i> Hero (Topo)
+    </h3>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="section" value="hero">
+        <div class="space-y-4">
+            {% for field in hero_form %}
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1.5">{{ field.label }}</label>
+                {% if field.field.widget.input_type == 'file' %}
+                    {% if field.value %}<div class="text-xs text-gray-400 mb-1">Atual: {{ field.value }}</div>{% endif %}
+                    <input type="file" name="{{ field.html_name }}" class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand/10 file:text-brand">
+                {% else %}
+                    <input type="text" name="{{ field.html_name }}" value="{{ field.value|default:'' }}"
+                        class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none transition">
+                {% endif %}
+                {% for error in field.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="mt-4 bg-brand text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark transition">Salvar Hero</button>
+    </form>
+</div>
+
+<!-- Economia -->
+<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6 max-w-3xl">
+    <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-calculator text-brand text-sm"></i> Economia / Calculadora
+    </h3>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="section" value="savings">
+        <div class="space-y-4">
+            {% for field in savings_form %}
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1.5">{{ field.label }}</label>
+                {% if field.field.widget.input_type == 'number' %}
+                    <input type="number" name="{{ field.html_name }}" value="{{ field.value|default:'' }}"
+                        class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand outline-none transition">
+                {% else %}
+                    <input type="text" name="{{ field.html_name }}" value="{{ field.value|default:'' }}"
+                        class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand outline-none transition">
+                {% endif %}
+                {% if field.help_text %}<p class="text-xs text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
+                {% for error in field.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="mt-4 bg-brand text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark transition">Salvar Economia</button>
+    </form>
+</div>
+
+<!-- Mega Energia Home -->
+<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6 max-w-3xl">
+    <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-bolt text-brand text-sm"></i> Seção Energia (Home)
+    </h3>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="section" value="mega">
+        <div class="space-y-4">
+            {% for field in mega_form %}
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1.5">{{ field.label }}</label>
+                <input type="text" name="{{ field.html_name }}" value="{{ field.value|default:'' }}"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand outline-none transition">
+                {% if field.help_text %}<p class="text-xs text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
+                {% for error in field.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="mt-4 bg-brand text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark transition">Salvar</button>
+    </form>
+</div>
+
+<!-- Vantagens (list) -->
+<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6 max-w-3xl">
+    <h3 class="text-base font-bold text-gray-900 mb-4">Vantagens da Energia</h3>
+    <div class="space-y-2">
+        {% for f in features %}
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center gap-3">
+                <i class="{{ f.icon_class }} text-brand"></i>
+                <span class="text-sm font-medium text-gray-700">{{ f.title }}</span>
+            </div>
+            <span class="text-xs text-gray-400">Ordem: {{ f.order }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    <p class="text-xs text-gray-400 mt-3">Para editar vantagens e passos, use o <a href="/admin/pages/energyfeature/" class="text-brand hover:underline">Django Admin</a>.</p>
+</div>
+{% endblock %}

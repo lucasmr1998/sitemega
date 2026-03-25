@@ -1,0 +1,135 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+    <p class="text-gray-500 text-sm mt-1">Visão geral do site e leads capturados.</p>
+</div>
+
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="kpi-card bg-white rounded-xl border border-gray-200 p-6">
+        <div class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Leads (Total)</div>
+        <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-extrabold text-gray-900">{{ total_leads }}</span>
+        </div>
+        <div class="text-xs text-gray-400 mt-1">Todos os leads capturados</div>
+    </div>
+
+    <div class="kpi-card bg-white rounded-xl border border-gray-200 p-6">
+        <div class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Leads (Hoje)</div>
+        <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-extrabold text-gray-900">{{ leads_today }}</span>
+        </div>
+        <div class="text-xs text-gray-400 mt-1">Novos leads hoje</div>
+    </div>
+
+    <div class="kpi-card bg-white rounded-xl border border-gray-200 p-6">
+        <div class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Planos Ativos</div>
+        <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-extrabold text-gray-900">{{ active_plans }}</span>
+        </div>
+        <div class="text-xs text-gray-400 mt-1">Planos publicados no site</div>
+    </div>
+
+    <div class="kpi-card bg-white rounded-xl border border-gray-200 p-6">
+        <div class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Banners Ativos</div>
+        <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-extrabold text-gray-900">{{ active_banners }}</span>
+        </div>
+        <div class="text-xs text-gray-400 mt-1">Banners visíveis no site</div>
+    </div>
+</div>
+
+<!-- Chart + Recent Leads -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Chart -->
+    <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
+        <h3 class="text-base font-bold text-gray-900 mb-1">Evolução Diária (Últimos 7 dias)</h3>
+        <p class="text-xs text-gray-400 mb-6">Leads capturados por dia</p>
+        <canvas id="leadsChart" height="120"></canvas>
+    </div>
+
+    <!-- Recent Leads -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold text-gray-900">Leads Recentes</h3>
+            <a href="{% url 'dashboard:leads_list' %}" class="text-xs text-brand font-medium hover:underline">Ver todos</a>
+        </div>
+        <div class="space-y-3">
+            {% for lead in recent_leads %}
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                <div class="w-9 h-9 rounded-full bg-brand/10 text-brand flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    {{ lead.nome|first|upper }}
+                </div>
+                <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium text-gray-900 truncate">{{ lead.nome }}</div>
+                    <div class="text-xs text-gray-400">{{ lead.source }} · {{ lead.created_at|timesince }} atrás</div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-sm text-gray-400 text-center py-4">Nenhum lead ainda.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Content Overview -->
+<div class="mt-6 bg-white rounded-xl border border-gray-200 p-6">
+    <h3 class="text-base font-bold text-gray-900 mb-4">Conteúdo do Site</h3>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        {% for item in content_counts %}
+        <a href="{{ item.url }}" class="flex flex-col items-center p-4 rounded-xl bg-gray-50 hover:bg-brand/5 transition group">
+            <i class="{{ item.icon }} text-lg text-gray-400 group-hover:text-brand transition mb-2"></i>
+            <span class="text-2xl font-bold text-gray-900">{{ item.count }}</span>
+            <span class="text-xs text-gray-500 mt-0.5">{{ item.label }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const ctx = document.getElementById('leadsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Leads',
+                data: {{ chart_data|safe }},
+                borderColor: '#2323FA',
+                backgroundColor: 'rgba(35, 35, 250, 0.05)',
+                borderWidth: 2.5,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#2323FA',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, font: { size: 11 } },
+                    grid: { color: '#f1f5f9' },
+                },
+                x: {
+                    ticks: { font: { size: 11 } },
+                    grid: { display: false },
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

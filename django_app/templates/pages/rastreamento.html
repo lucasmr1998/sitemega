@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Megalink - Mega Rastreamento{% endblock %}
+
+{% block content %}
+    {% include "sections/tracking_hero.html" %}
+    {% include "sections/tracking_features.html" %}
+    {% include "sections/tracking_benefits.html" %}
+    {% include "sections/tracking_app.html" %}
+    {% include "sections/tracking_cta.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/form-handler.js' %}"></script>
+{% endblock %}
