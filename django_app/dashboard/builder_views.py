@@ -7,6 +7,8 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 
+from django.db import models
+
 from builder.models import Page, ComponentType, PageComponent
 
 
@@ -173,6 +175,84 @@ def component_reorder(request, pk):
         return JsonResponse({'status': 'ok'})
     except (json.JSONDecodeError, KeyError):
         return JsonResponse({'error': 'Invalid data'}, status=400)
+
+
+# ─── Page Preview (iframe-friendly) ──────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def page_preview(request, pk):
+    page = get_object_or_404(Page, pk=pk)
+    sections = page.sections.filter(is_active=True).select_related('component_type')
+    return render(request, 'builder/page_preview.html', {
+        'page': page,
+        'sections': sections,
+    })
+
+
+# ─── Autosave Component ─────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+@require_POST
+def component_autosave(request, pk):
+    comp = get_object_or_404(PageComponent, pk=pk)
+    schema = comp.component_type.schema
+    data = _parse_component_data(request.POST, request.FILES, schema, comp.data)
+    comp.data = data
+    comp.is_active = request.POST.get('is_active') == 'on'
+    comp.css_classes = request.POST.get('css_classes', '')
+    comp.save(update_fields=['data', 'is_active', 'css_classes', 'updated_at'])
+    return JsonResponse({'status': 'ok'})
+
+
+# ─── Duplicate Component ────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+@require_POST
+def component_duplicate(request, pk):
+    comp = get_object_or_404(PageComponent, pk=pk)
+    new_order = comp.order + 1
+    # Shift subsequent components
+    PageComponent.objects.filter(page=comp.page, order__gte=new_order).update(
+        order=models.F('order') + 1
+    )
+    PageComponent.objects.create(
+        page=comp.page,
+        component_type=comp.component_type,
+        data=comp.data,
+        order=new_order,
+        is_active=comp.is_active,
+        css_classes=comp.css_classes,
+    )
+    messages.success(request, 'Componente duplicado!')
+    return redirect('dashboard:page_editor', pk=comp.page.pk)
+
+
+# ─── Duplicate Page ─────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+@require_POST
+def page_duplicate(request, pk):
+    page = get_object_or_404(Page, pk=pk)
+    new_page = Page.objects.create(
+        title=f'{page.title} (cópia)',
+        slug=f'{page.slug}-copia-{Page.objects.count()}',
+        meta_description=page.meta_description,
+        status='draft',
+        is_homepage=False,
+        show_header=page.show_header,
+        show_footer=page.show_footer,
+    )
+    for section in page.sections.all():
+        PageComponent.objects.create(
+            page=new_page,
+            component_type=section.component_type,
+            data=section.data,
+            order=section.order,
+            is_active=section.is_active,
+            css_classes=section.css_classes,
+        )
+    messages.success(request, f'Página duplicada como "{new_page.title}"!')
+    return redirect('dashboard:page_editor', pk=new_page.pk)
 
 
 # ─── Components Library ──────────────────────────────────────────────────────

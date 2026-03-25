@@ -18,14 +18,42 @@
         </div>
     </div>
     <div class="flex items-center gap-2">
+        <button onclick="togglePreview()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2" id="previewBtn">
+            <i class="fa-solid fa-eye text-xs"></i> Preview
+        </button>
         {% if page_obj.status == 'published' %}
         <a href="{{ page_obj.get_absolute_url }}" target="_blank" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2">
             <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i> Ver no site
         </a>
         {% endif %}
+        <form method="post" action="{% url 'dashboard:page_duplicate' pk=page_obj.pk %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2" title="Duplicar página">
+                <i class="fa-solid fa-copy text-xs"></i> Duplicar
+            </button>
+        </form>
         <a href="{% url 'dashboard:page_edit' pk=page_obj.pk %}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2">
-            <i class="fa-solid fa-gear text-xs"></i> Configurações
+            <i class="fa-solid fa-gear text-xs"></i> Config
         </a>
+    </div>
+</div>
+
+<!-- Preview iframe (hidden by default) -->
+<div id="previewPanel" class="hidden mb-6">
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
+            <span class="text-xs font-medium text-gray-500"><i class="fa-solid fa-eye mr-1"></i> Preview ao vivo</span>
+            <div class="flex items-center gap-2">
+                <button onclick="reloadPreview()" class="text-xs text-gray-400 hover:text-brand transition" title="Recarregar">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button onclick="togglePreview()" class="text-xs text-gray-400 hover:text-red-500 transition" title="Fechar">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <iframe id="previewFrame" src="{% url 'dashboard:page_preview' pk=page_obj.pk %}"
+            class="w-full border-0" style="height: 500px;"></iframe>
     </div>
 </div>
 
@@ -64,6 +92,12 @@
                         class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition text-xs" title="Editar">
                         <i class="fa-solid fa-pen"></i>
                     </a>
+                    <form method="post" action="{% url 'dashboard:component_duplicate' pk=section.pk %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition text-xs" title="Duplicar">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </form>
                     <form method="post" action="{% url 'dashboard:component_delete' pk=section.pk %}" class="inline"
                           onsubmit="return confirm('Remover este componente?')">
                         {% csrf_token %}
@@ -87,7 +121,7 @@
     <div class="lg:col-span-1">
         <div class="bg-white rounded-xl border border-gray-200 p-4 sticky top-24">
             <h3 class="text-sm font-bold text-gray-900 mb-3">Adicionar Componente</h3>
-            <div class="space-y-1.5">
+            <div class="space-y-1.5 max-h-[60vh] overflow-y-auto">
                 {% for ct in component_types %}
                 <form method="post" action="{% url 'dashboard:component_add' pk=page_obj.pk %}" class="inline w-full">
                     {% csrf_token %}
@@ -112,7 +146,22 @@
 </div>
 
 <script>
-// Simple drag-and-drop reorder
+// Preview toggle
+let previewOpen = false;
+function togglePreview() {
+    const panel = document.getElementById('previewPanel');
+    const btn = document.getElementById('previewBtn');
+    previewOpen = !previewOpen;
+    panel.classList.toggle('hidden', !previewOpen);
+    btn.innerHTML = previewOpen
+        ? '<i class="fa-solid fa-eye-slash text-xs"></i> Fechar Preview'
+        : '<i class="fa-solid fa-eye text-xs"></i> Preview';
+}
+function reloadPreview() {
+    document.getElementById('previewFrame').src += '';
+}
+
+// Drag-and-drop reorder
 document.addEventListener('DOMContentLoaded', () => {
     const list = document.getElementById('sections-list');
     if (!list) return;
@@ -123,9 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const handle = el.querySelector('.drag-handle');
         if (!handle) return;
 
-        handle.addEventListener('mousedown', () => {
-            el.draggable = true;
-        });
+        handle.addEventListener('mousedown', () => { el.draggable = true; });
 
         el.addEventListener('dragstart', (e) => {
             dragItem = el;
@@ -159,13 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
         items.forEach((el, i) => {
             order.push({ id: parseInt(el.dataset.id), order: i });
         });
-
         fetch('{% url "dashboard:component_reorder" pk=page_obj.pk %}', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}',
-            },
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
             body: JSON.stringify(order),
         });
     }

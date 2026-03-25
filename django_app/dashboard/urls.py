@@ -39,6 +39,10 @@ urlpatterns = [
     path('paginas/componente/<int:pk>/editar', builder_views.component_edit, name='component_edit'),
     path('paginas/componente/<int:pk>/excluir', builder_views.component_delete, name='component_delete'),
     path('paginas/<int:pk>/reordenar', builder_views.component_reorder, name='component_reorder'),
+    path('paginas/<int:pk>/preview', builder_views.page_preview, name='page_preview'),
+    path('paginas/<int:pk>/duplicar', builder_views.page_duplicate, name='page_duplicate'),
+    path('paginas/componente/<int:pk>/autosave', builder_views.component_autosave, name='component_autosave'),
+    path('paginas/componente/<int:pk>/duplicar', builder_views.component_duplicate, name='component_duplicate'),
     path('componentes', builder_views.components_list, name='components_list'),
 
     # Media Library

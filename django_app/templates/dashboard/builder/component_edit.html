@@ -51,6 +51,9 @@
                 Salvar
             </button>
             <a href="{% url 'dashboard:page_editor' pk=page_obj.pk %}" class="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Cancelar</a>
+            <span id="autosaveStatus" class="text-xs text-gray-400 ml-auto hidden">
+                <i class="fa-solid fa-check-circle text-green-500 mr-1"></i> Salvo automaticamente
+            </span>
         </div>
     </form>
 </div>
@@ -73,6 +76,14 @@ const cls = {
 function esc(str) {
     if (str === null || str === undefined) return '';
     return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function helpText(field) {
+    return field.help ? `<p class="text-xs text-gray-400 mt-1">${esc(field.help)}</p>` : '';
+}
+
+function requiredStar(field) {
+    return field.required ? '<span class="text-red-400 ml-0.5">*</span>' : '';
 }
 
 // Build all fields from schema
@@ -194,12 +205,12 @@ schema.forEach(field => {
         container.appendChild(wrap);
 
     } else {
-        // text, url, image
+        // text, url
         const v = val || '';
-        const required = field.required ? '<span class="text-red-400">*</span>' : '';
         wrap.innerHTML = `
-            <label class="${cls.label}">${esc(field.label)} ${required}</label>
-            <input type="${field.type || 'text'}" name="${field.name}" value="${esc(v)}" class="${cls.input}">`;
+            <label class="${cls.label}">${esc(field.label)} ${requiredStar(field)}</label>
+            <input type="${field.type || 'text'}" name="${field.name}" value="${esc(v)}" class="${cls.input}" ${field.required ? 'required' : ''}>
+            ${helpText(field)}`;
         container.appendChild(wrap);
     }
 });
@@ -279,5 +290,52 @@ function addRepeaterItemWithData(fieldName, subFields, idx, itemData) {
     rc.appendChild(div);
     repeaterCounters[fieldName] = Math.max(repeaterCounters[fieldName] || 0, idx + 1);
 }
+
+// ─── Autosave (every 30s) ───────────────────────────────────────────────────
+const autosaveUrl = '{% url "dashboard:component_autosave" pk=comp.pk %}';
+const csrfToken = '{{ csrf_token }}';
+const statusEl = document.getElementById('autosaveStatus');
+let autosaveTimer;
+
+function startAutosave() {
+    autosaveTimer = setInterval(async () => {
+        const form = document.querySelector('form');
+        const fd = new FormData(form);
+        try {
+            const res = await fetch(autosaveUrl, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: fd,
+            });
+            if (res.ok) {
+                statusEl.classList.remove('hidden');
+                setTimeout(() => statusEl.classList.add('hidden'), 3000);
+            }
+        } catch (e) { /* silently fail */ }
+    }, 30000);
+}
+startAutosave();
+
+// ─── Client-side validation ─────────────────────────────────────────────────
+document.querySelector('form').addEventListener('submit', function(e) {
+    let valid = true;
+    // Check required fields
+    schema.forEach(field => {
+        if (!field.required) return;
+        const input = document.querySelector(`[name="${field.name}"]`);
+        if (input && !input.value.trim()) {
+            input.classList.add('border-red-400', 'ring-1', 'ring-red-400');
+            input.addEventListener('input', () => {
+                input.classList.remove('border-red-400', 'ring-1', 'ring-red-400');
+            }, { once: true });
+            valid = false;
+        }
+    });
+    if (!valid) {
+        e.preventDefault();
+        const firstInvalid = document.querySelector('.border-red-400');
+        if (firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});
 </script>
 {% endblock %}
