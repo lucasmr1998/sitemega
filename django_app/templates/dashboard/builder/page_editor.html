@@ -32,6 +32,9 @@
                 <i class="fa-solid fa-copy text-xs"></i> Duplicar
             </button>
         </form>
+        <a href="{% url 'dashboard:revision_list' pk=page_obj.pk %}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left text-xs"></i> Revisões
+        </a>
         <a href="{% url 'dashboard:page_edit' pk=page_obj.pk %}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2">
             <i class="fa-solid fa-gear text-xs"></i> Config
         </a>

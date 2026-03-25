@@ -1,0 +1,50 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Revisões - {{ page_obj.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <a href="{% url 'dashboard:page_editor' pk=page_obj.pk %}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand transition mb-3">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Voltar ao editor
+    </a>
+    <h1 class="text-2xl font-bold text-gray-900">Revisões — {{ page_obj.title }}</h1>
+    <p class="text-sm text-gray-400 mt-1">Histórico de alterações da página. Restaure qualquer versão anterior.</p>
+</div>
+
+<div class="max-w-3xl space-y-3">
+    {% for rev in revisions %}
+    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4 group hover:border-brand/30 transition">
+        <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center font-bold text-sm flex-shrink-0">
+            #{{ rev.revision_number }}
+        </div>
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-900">Revisão #{{ rev.revision_number }}</span>
+                {% if forloop.first %}
+                    <span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">Mais recente</span>
+                {% endif %}
+            </div>
+            <p class="text-xs text-gray-400 mt-0.5">
+                {{ rev.created_at|date:"d/m/Y H:i" }}
+                {% if rev.created_by %} · {{ rev.created_by.username }}{% endif %}
+                {% if rev.comment %} · {{ rev.comment }}{% endif %}
+            </p>
+            <p class="text-xs text-gray-300 mt-0.5">{{ rev.data|length }} componente{{ rev.data|length|pluralize:"s" }}</p>
+        </div>
+        <form method="post" action="{% url 'dashboard:revision_restore' pk=page_obj.pk rev_pk=rev.pk %}"
+              onsubmit="return confirm('Restaurar para a revisão #{{ rev.revision_number }}? O estado atual será salvo como nova revisão.')">
+            {% csrf_token %}
+            <button type="submit" class="px-4 py-2 bg-brand/10 text-brand rounded-lg text-xs font-medium hover:bg-brand/20 transition opacity-0 group-hover:opacity-100">
+                <i class="fa-solid fa-clock-rotate-left mr-1"></i> Restaurar
+            </button>
+        </form>
+    </div>
+    {% empty %}
+    <div class="text-center py-16 bg-white rounded-xl border border-gray-200">
+        <i class="fa-solid fa-clock-rotate-left text-4xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500 text-sm">Nenhuma revisão ainda.</p>
+        <p class="text-gray-400 text-xs mt-1">Revisões são criadas automaticamente ao salvar componentes.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

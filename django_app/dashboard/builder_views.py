@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 
 from django.db import models
 
-from builder.models import Page, ComponentType, PageComponent
+from builder.models import Page, ComponentType, PageComponent, PageRevision
 
 
 LOGIN_URL = '/painel/login'
@@ -40,26 +40,31 @@ def page_form(request, pk=None):
         is_homepage = request.POST.get('is_homepage') == 'on'
         show_header = request.POST.get('show_header') == 'on'
         show_footer = request.POST.get('show_footer') == 'on'
+        # SEO
+        meta_title = request.POST.get('meta_title', '').strip()
+        canonical_url = request.POST.get('canonical_url', '').strip()
+        noindex = request.POST.get('noindex') == 'on'
+        # Agendamento
+        publish_at = request.POST.get('publish_at', '').strip() or None
+        unpublish_at = request.POST.get('unpublish_at', '').strip() or None
 
         if not title or not slug:
             messages.error(request, 'Título e URL são obrigatórios.')
         else:
+            fields = dict(
+                title=title, slug=slug, meta_description=meta,
+                status=status, is_homepage=is_homepage,
+                show_header=show_header, show_footer=show_footer,
+                meta_title=meta_title, canonical_url=canonical_url,
+                noindex=noindex, publish_at=publish_at, unpublish_at=unpublish_at,
+            )
             if instance:
-                instance.title = title
-                instance.slug = slug
-                instance.meta_description = meta
-                instance.status = status
-                instance.is_homepage = is_homepage
-                instance.show_header = show_header
-                instance.show_footer = show_footer
+                for k, v in fields.items():
+                    setattr(instance, k, v)
                 instance.save()
                 messages.success(request, 'Página atualizada!')
             else:
-                instance = Page.objects.create(
-                    title=title, slug=slug, meta_description=meta,
-                    status=status, is_homepage=is_homepage,
-                    show_header=show_header, show_footer=show_footer,
-                )
+                instance = Page.objects.create(**fields)
                 messages.success(request, 'Página criada!')
             return redirect('dashboard:page_editor', pk=instance.pk)
 
@@ -134,6 +139,8 @@ def component_edit(request, pk):
     schema = comp.component_type.schema
 
     if request.method == 'POST':
+        # Create revision before saving
+        PageRevision.create_from_page(comp.page, user=request.user, comment=f'Editou {comp.component_type.name}')
         data = _parse_component_data(request.POST, request.FILES, schema, comp.data)
         comp.data = data
         comp.is_active = request.POST.get('is_active') == 'on'
@@ -253,6 +260,31 @@ def page_duplicate(request, pk):
         )
     messages.success(request, f'Página duplicada como "{new_page.title}"!')
     return redirect('dashboard:page_editor', pk=new_page.pk)
+
+
+# ─── Revisions ──────────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def revision_list(request, pk):
+    page = get_object_or_404(Page, pk=pk)
+    revisions = page.revisions.select_related('created_by')[:50]
+    return render(request, 'dashboard/builder/revisions_list.html', {
+        'sidebar_active': 'pages',
+        'page_obj': page,
+        'revisions': revisions,
+    })
+
+
+@login_required(login_url=LOGIN_URL)
+@require_POST
+def revision_restore(request, pk, rev_pk):
+    page = get_object_or_404(Page, pk=pk)
+    revision = get_object_or_404(PageRevision, pk=rev_pk, page=page)
+    # Save current state as new revision before restoring
+    PageRevision.create_from_page(page, user=request.user, comment=f'Antes de restaurar rev #{revision.revision_number}')
+    revision.restore()
+    messages.success(request, f'Página restaurada para revisão #{revision.revision_number}!')
+    return redirect('dashboard:page_editor', pk=page.pk)
 
 
 # ─── Components Library ──────────────────────────────────────────────────────

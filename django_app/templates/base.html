@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Megalink{% endblock %}</title>
 
+    <!-- SEO -->
+    {% if page.meta_description %}<meta name="description" content="{{ page.meta_description }}">{% endif %}
+    {% if page.noindex %}<meta name="robots" content="noindex, nofollow">{% endif %}
+    <meta property="og:title" content="{{ page.meta_title|default:page.title|default:'MegaLink' }}">
+    {% if page.meta_description %}<meta property="og:description" content="{{ page.meta_description }}">{% endif %}
+    {% if page.og_image %}<meta property="og:image" content="{{ page.og_image.url }}">{% endif %}
+    <meta property="og:type" content="website">
+    {% if page.canonical_url %}<link rel="canonical" href="{{ page.canonical_url }}">{% endif %}
+
     <!-- Google Fonts: Barlow -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
