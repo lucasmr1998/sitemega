@@ -5,6 +5,7 @@ from django.core.files.storage import default_storage
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
+from django.views.decorators.clickjacking import xframe_options_exempt
 
 from django.db import models
 from django.utils.text import slugify
@@ -85,6 +86,38 @@ def page_form(request, pk=None):
     })
 
 
+# ─── Visual Editor (split-panel, fullscreen, sem sidebar) ────────────────────
+
+@role_required('page.view')
+def visual_editor(request, pk):
+    page = get_object_or_404(Page, pk=pk)
+    sections = page.sections.select_related('component_type').order_by('order')
+    component_types = ComponentType.objects.filter(is_active=True)
+
+    sections_data = []
+    for s in sections:
+        sections_data.append({
+            'id': s.pk,
+            'type_name': s.component_type.name,
+            'type_icon': s.component_type.icon,
+            'type_slug': s.component_type.slug,
+            'schema': s.component_type.schema,
+            'data': s.data,
+            'is_active': s.is_active,
+            'css_classes': s.css_classes,
+            'order': s.order,
+        })
+
+    types_data = [{'id': t.pk, 'name': t.name, 'icon': t.icon, 'description': t.description}
+                  for t in component_types]
+
+    return render(request, 'dashboard/builder/visual_editor.html', {
+        'page_obj': page,
+        'sections_json': sections_data,
+        'types_json': types_data,
+    })
+
+
 # ─── Page Delete ──────────────────────────────────────────────────────────────
 
 @role_required('page.delete')
@@ -134,10 +167,20 @@ def component_add(request, pk):
             default_data[field['name']] = field.get('default', '')
 
     max_order = page.sections.count()
-    PageComponent.objects.create(
+    comp = PageComponent.objects.create(
         page=page, component_type=comp_type,
         data=default_data, order=max_order,
     )
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'status': 'ok', 'id': comp.pk,
+            'type_name': comp_type.name, 'type_icon': comp_type.icon,
+            'type_slug': comp_type.slug, 'schema': comp_type.schema,
+            'data': default_data, 'order': max_order,
+            'is_active': True, 'css_classes': '',
+        })
+
     messages.success(request, f'Componente "{comp_type.name}" adicionado!')
     return redirect('dashboard:page_editor', pk=page.pk)
 
@@ -176,6 +219,10 @@ def component_delete(request, pk):
     comp = get_object_or_404(PageComponent, pk=pk)
     page_pk = comp.page.pk
     comp.delete()
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'ok'})
+
     messages.success(request, 'Componente removido!')
     return redirect('dashboard:page_editor', pk=page_pk)
 
@@ -197,6 +244,7 @@ def component_reorder(request, pk):
 
 # ─── Page Preview (iframe-friendly) ──────────────────────────────────────────
 
+@xframe_options_exempt
 @role_required('page.view')
 def page_preview(request, pk):
     page = get_object_or_404(Page, pk=pk)
@@ -233,7 +281,7 @@ def component_duplicate(request, pk):
     PageComponent.objects.filter(page=comp.page, order__gte=new_order).update(
         order=models.F('order') + 1
     )
-    PageComponent.objects.create(
+    new_comp = PageComponent.objects.create(
         page=comp.page,
         component_type=comp.component_type,
         data=comp.data,
@@ -241,6 +289,19 @@ def component_duplicate(request, pk):
         is_active=comp.is_active,
         css_classes=comp.css_classes,
     )
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'status': 'ok',
+            'id': new_comp.pk,
+            'type_name': new_comp.component_type.name,
+            'type_icon': new_comp.component_type.icon,
+            'type_slug': new_comp.component_type.slug,
+            'schema': new_comp.component_type.schema,
+            'data': new_comp.data,
+            'is_active': new_comp.is_active,
+            'css_classes': new_comp.css_classes,
+            'order': new_comp.order,
+        })
     messages.success(request, 'Componente duplicado!')
     return redirect('dashboard:page_editor', pk=comp.page.pk)
 
@@ -284,6 +345,16 @@ def revision_list(request, pk):
         'page_obj': page,
         'revisions': revisions,
     })
+
+
+@role_required('page.edit')
+@require_POST
+def revision_create(request, pk):
+    """Cria uma revisão manual (chamado pelo visual editor via AJAX)."""
+    page = get_object_or_404(Page, pk=pk)
+    comment = request.POST.get('comment', 'Salvo pelo editor visual')
+    rev = PageRevision.create_from_page(page, user=request.user, comment=comment)
+    return JsonResponse({'status': 'ok', 'revision_number': rev.revision_number})
 
 
 @role_required('revision.restore')

@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor — {{ page_obj.title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { brand: '#2323FA', 'brand-dark': '#040470' } } }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <style>
+        .drag-over { border-top: 2px solid #2323FA; }
+        #fields-container::-webkit-scrollbar,
+        #comp-list::-webkit-scrollbar { width: 4px; }
+        #fields-container::-webkit-scrollbar-thumb,
+        #comp-list::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+        .comp-card.selected { border-color: #2323FA; background: #f5f5ff; }
+        .save-pulse { animation: pulse 1s ease-in-out; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    </style>
+</head>
+<body class="h-full bg-gray-100 overflow-hidden">
+
+<!-- ── Navbar ─────────────────────────────────────────────────────────────── -->
+<header class="fixed top-0 left-0 right-0 h-12 bg-white border-b border-gray-200 z-50 flex items-center px-4 gap-3">
+    <a href="{% url 'dashboard:pages_list' %}"
+       class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand transition">
+        <i class="fa-solid fa-arrow-left text-xs"></i>
+        <span class="hidden sm:inline">Páginas</span>
+    </a>
+    <div class="w-px h-5 bg-gray-200"></div>
+    <span class="font-semibold text-gray-900 text-sm truncate flex-1">{{ page_obj.title }}</span>
+    {% if page_obj.status == 'published' %}
+        <span class="px-2 py-0.5 text-[10px] font-bold uppercase bg-green-100 text-green-700 rounded-full flex-shrink-0">Publicada</span>
+    {% else %}
+        <span class="px-2 py-0.5 text-[10px] font-bold uppercase bg-yellow-100 text-yellow-700 rounded-full flex-shrink-0">Rascunho</span>
+    {% endif %}
+    <div class="flex items-center gap-1.5 ml-auto flex-shrink-0">
+        <span id="save-status" class="text-xs text-gray-400 hidden">
+            <i class="fa-solid fa-check-circle text-green-500 mr-0.5"></i> Salvo
+        </span>
+        <a href="{% url 'dashboard:page_editor' pk=page_obj.pk %}"
+           class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-list-ul"></i>
+            <span class="hidden sm:inline">Lista</span>
+        </a>
+        {% if page_obj.status == 'published' %}
+        <a href="{{ page_obj.get_absolute_url }}" target="_blank"
+           class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        </a>
+        {% endif %}
+        <a href="{% url 'dashboard:page_edit' pk=page_obj.pk %}"
+           class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-gear"></i>
+        </a>
+        <button onclick="saveWithRevision()"
+                class="px-4 py-1.5 bg-brand text-white rounded-lg text-xs font-semibold hover:bg-brand-dark transition flex items-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar
+        </button>
+    </div>
+</header>
+
+<!-- ── Layout split ───────────────────────────────────────────────────────── -->
+<div class="fixed top-12 left-0 bottom-0 right-0 flex">
+
+    <!-- Painel esquerdo -->
+    <aside class="w-80 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col h-full">
+
+        <!-- Lista de componentes -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Componentes</span>
+            <button onclick="showAddModal()"
+                    class="w-7 h-7 rounded-lg bg-brand text-white flex items-center justify-center hover:bg-brand-dark transition text-xs" title="Adicionar componente">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+
+        <div id="comp-list" class="flex-shrink-0 overflow-y-auto" style="max-height: 40%;">
+            <!-- renderizado pelo JS -->
+        </div>
+
+        <!-- Divider + título campos -->
+        <div id="fields-header" class="px-4 py-2 border-t border-b border-gray-100 bg-gray-50 hidden flex-shrink-0">
+            <span id="fields-title" class="text-xs font-bold text-gray-500 uppercase tracking-wider"></span>
+        </div>
+
+        <!-- Campos do componente selecionado -->
+        <div id="fields-container" class="flex-1 overflow-y-auto px-4 py-3">
+            <div id="fields-empty" class="flex flex-col items-center justify-center h-full text-center py-8">
+                <i class="fa-solid fa-hand-pointer text-3xl text-gray-200 mb-3"></i>
+                <p class="text-xs text-gray-400">Clique em um componente para editar seus campos</p>
+            </div>
+            <div id="form-fields" class="space-y-4"></div>
+
+            <!-- Configurações do componente -->
+            <div id="comp-settings" class="hidden mt-5 pt-5 border-t border-gray-100 space-y-3">
+                <p class="text-[10px] font-bold text-gray-400 uppercase">Configurações</p>
+                <label class="flex items-center gap-2.5 cursor-pointer">
+                    <input type="checkbox" id="field-is_active" onchange="onFieldChange()"
+                           class="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand">
+                    <span class="text-xs text-gray-600">Componente ativo</span>
+                </label>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Classes CSS extras</label>
+                    <input type="text" id="field-css_classes" oninput="onFieldChange()" placeholder="Ex: py-24 bg-gray-50"
+                           class="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand outline-none transition">
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Preview iframe -->
+    <main class="flex-1 overflow-hidden bg-gray-200">
+        <div class="w-full h-full relative">
+            <div id="preview-loading" class="absolute inset-0 bg-gray-100 flex items-center justify-center z-10 hidden">
+                <i class="fa-solid fa-rotate-right fa-spin text-brand text-xl"></i>
+            </div>
+            <iframe id="preview-frame"
+                    src="{% url 'dashboard:page_preview' pk=page_obj.pk %}"
+                    class="w-full h-full border-0"
+                    onload="document.getElementById('preview-loading').classList.add('hidden')">
+            </iframe>
+        </div>
+    </main>
+</div>
+
+<!-- ── Modal: Adicionar componente ───────────────────────────────────────── -->
+<div id="add-modal" class="fixed inset-0 bg-black/40 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <h3 class="font-bold text-gray-900">Adicionar Componente</h3>
+            <button onclick="hideAddModal()" class="w-7 h-7 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition flex items-center justify-center text-sm">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+        <div id="types-list" class="overflow-y-auto p-3 space-y-1"></div>
+    </div>
+</div>
+
+<!-- ── Dados do Django → JS ──────────────────────────────────────────────── -->
+{{ sections_json|json_script:"sections-data" }}
+{{ types_json|json_script:"types-data" }}
+
+<script>
+// ─── Estado global ──────────────────────────────────────────────────────────
+let sections = JSON.parse(document.getElementById('sections-data').textContent);
+const componentTypes = JSON.parse(document.getElementById('types-data').textContent);
+const csrfToken = '{{ csrf_token }}';
+const pageId = {{ page_obj.pk }};
+const reorderUrl = '{% url "dashboard:component_reorder" pk=page_obj.pk %}';
+const addUrl = '{% url "dashboard:component_add" pk=page_obj.pk %}';
+
+// ─── URLs (via Django, sem hardcode) ─────────────────────────────────────────
+const _tplDelete    = '{% url "dashboard:component_delete" pk=0 %}';
+const _tplDuplicate = '{% url "dashboard:component_duplicate" pk=0 %}';
+const _tplAutosave  = '{% url "dashboard:component_autosave" pk=0 %}';
+const revisionCreateUrl = '{% url "dashboard:revision_create" pk=page_obj.pk %}';
+function compUrl(tpl, id) { return tpl.replace('/0/', `/${id}/`); }
+
+let selectedId = null;
+let autoSaveTimer = null;
+let previewTimer = null;
+const AUTOSAVE_DELAY = 800;
+const PREVIEW_DELAY  = 1200;
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+const cls = {
+    label: 'block text-[10px] font-bold text-gray-500 uppercase mb-1',
+    input: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand focus:border-brand outline-none transition',
+    textarea: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand outline-none transition resize-y',
+    select: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand outline-none transition bg-white',
+    subLabel: 'block text-[10px] font-semibold text-gray-400 uppercase mb-1',
+    subInput: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-brand',
+};
+
+function helpText(field) {
+    return field.help ? `<p class="text-[10px] text-gray-400 mt-0.5">${esc(field.help)}</p>` : '';
+}
+function requiredStar(field) {
+    return field.required ? '<span class="text-red-400 ml-0.5">*</span>' : '';
+}
+
+// ─── Render lista de componentes ─────────────────────────────────────────────
+function renderComponentList() {
+    const list = document.getElementById('comp-list');
+    if (!sections.length) {
+        list.innerHTML = `<div class="px-4 py-6 text-center">
+            <i class="fa-solid fa-puzzle-piece text-2xl text-gray-200 mb-2"></i>
+            <p class="text-xs text-gray-400">Nenhum componente.<br>Clique em + para adicionar.</p>
+        </div>`;
+        return;
+    }
+    list.innerHTML = sections.map(s => `
+        <div class="comp-card flex items-center gap-2 px-3 py-2.5 mx-2 my-1 rounded-xl border border-transparent cursor-pointer hover:border-brand/30 hover:bg-gray-50 transition group ${s.id === selectedId ? 'selected' : ''}"
+             data-id="${s.id}" onclick="selectComponent(${s.id})">
+            <div class="drag-handle cursor-grab text-gray-300 hover:text-gray-400 transition flex-shrink-0 px-0.5" title="Arrastar">
+                <i class="fa-solid fa-grip-vertical text-xs"></i>
+            </div>
+            <div class="w-7 h-7 rounded-lg ${s.id === selectedId ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500 group-hover:bg-brand/10 group-hover:text-brand'} flex items-center justify-center flex-shrink-0 transition text-xs">
+                <i class="${esc(s.type_icon)}"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-medium text-gray-800 truncate">${esc(s.type_name)}</p>
+                ${!s.is_active ? '<span class="text-[9px] bg-gray-100 text-gray-400 px-1 py-0.5 rounded font-medium">Oculto</span>' : ''}
+            </div>
+            <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
+                <button onclick="event.stopPropagation(); duplicateComponent(${s.id})"
+                        class="w-6 h-6 rounded text-gray-400 hover:text-green-600 hover:bg-green-50 flex items-center justify-center transition text-xs" title="Duplicar">
+                    <i class="fa-solid fa-copy"></i>
+                </button>
+                <button onclick="event.stopPropagation(); deleteComponent(${s.id})"
+                        class="w-6 h-6 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition text-xs" title="Remover">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+    initDragDrop();
+}
+
+// ─── Selecionar componente ────────────────────────────────────────────────────
+function selectComponent(id) {
+    selectedId = id;
+    const section = sections.find(s => s.id === id);
+    if (!section) return;
+
+    // Atualiza visual da lista
+    document.querySelectorAll('.comp-card').forEach(el => {
+        const isSelected = parseInt(el.dataset.id) === id;
+        el.classList.toggle('selected', isSelected);
+        const icon = el.querySelector('.w-7');
+        if (icon) {
+            icon.className = `w-7 h-7 rounded-lg ${isSelected ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500 group-hover:bg-brand/10 group-hover:text-brand'} flex items-center justify-center flex-shrink-0 transition text-xs`;
+        }
+    });
+
+    // Cabeçalho dos campos
+    document.getElementById('fields-header').classList.remove('hidden');
+    document.getElementById('fields-title').textContent = section.type_name;
+    document.getElementById('fields-empty').classList.add('hidden');
+    document.getElementById('comp-settings').classList.remove('hidden');
+
+    // Preenche settings
+    document.getElementById('field-is_active').checked = section.is_active;
+    document.getElementById('field-css_classes').value = section.css_classes || '';
+
+    renderFields(section);
+}
+
+// ─── Renderizar campos do componente ─────────────────────────────────────────
+const repeaterCounters = {};
+const quillInstances = {};
+
+function renderFields(section) {
+    const container = document.getElementById('form-fields');
+    container.innerHTML = '';
+
+    // Limpa instâncias Quill antigas
+    Object.keys(quillInstances).forEach(k => delete quillInstances[k]);
+
+    const schema = section.schema || [];
+    const compData = section.data || {};
+
+    schema.forEach(field => {
+        const val = compData[field.name];
+        const wrap = document.createElement('div');
+
+        if (field.type === 'repeater') {
+            wrap.className = 'border border-gray-200 rounded-xl p-3';
+            wrap.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <label class="${cls.label}">${esc(field.label)}</label>
+                    <button type="button" class="text-[10px] text-brand font-medium hover:underline flex items-center gap-1"
+                        onclick="addRepeaterItem('${field.name}', ${JSON.stringify(field.fields || []).replace(/"/g,'&quot;')})">
+                        <i class="fa-solid fa-plus text-[9px]"></i> Adicionar
+                    </button>
+                </div>
+                <div id="repeater_${field.name}" class="space-y-2"></div>`;
+            container.appendChild(wrap);
+            const items = Array.isArray(val) ? val : [];
+            items.forEach((item, idx) => addRepeaterItemWithData(field.name, field.fields || [], idx, item));
+
+        } else if (field.type === 'richtext') {
+            const v = val || '';
+            const rtId = `rt_${field.name}`;
+            wrap.innerHTML = `
+                <label class="${cls.label}">${esc(field.label)}</label>
+                <div id="${rtId}_toolbar"></div>
+                <div id="${rtId}_editor" class="border border-gray-200 rounded-b-lg min-h-[120px] bg-white text-xs"></div>
+                <textarea name="${field.name}" id="${rtId}" class="hidden">${esc(v)}</textarea>`;
+            container.appendChild(wrap);
+            setTimeout(() => {
+                if (typeof Quill !== 'undefined' && !quillInstances[rtId]) {
+                    const q = new Quill(`#${rtId}_editor`, {
+                        theme: 'snow',
+                        modules: { toolbar: [['bold','italic','underline'],[{'header':[2,3,false]}],[{'list':'ordered'},{'list':'bullet'}],['link'],['clean']] },
+                    });
+                    q.root.innerHTML = v;
+                    q.on('text-change', () => {
+                        document.getElementById(rtId).value = q.root.innerHTML;
+                        onFieldChange();
+                    });
+                    quillInstances[rtId] = q;
+                }
+            }, 0);
+
+        } else if (field.type === 'image') {
+            const v = val || '';
+            const imgPrev = v ? `<div class="mb-1.5"><img src="${esc(v)}" class="max-h-24 rounded border border-gray-200 object-cover"></div>` : '';
+            wrap.innerHTML = `
+                <label class="${cls.label}">${esc(field.label)}</label>
+                ${imgPrev}
+                <input type="file" name="${field.name}" accept="image/*" onchange="onFieldChange()"
+                    class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-brand/10 file:text-brand hover:file:bg-brand/20 transition">
+                <input type="hidden" name="${field.name}_current" value="${esc(v)}">`;
+            container.appendChild(wrap);
+
+        } else if (field.type === 'textarea') {
+            wrap.innerHTML = `
+                <label class="${cls.label}">${esc(field.label)}</label>
+                <textarea name="${field.name}" rows="3" oninput="onFieldChange()" class="${cls.textarea}">${esc(val || '')}</textarea>
+                ${helpText(field)}`;
+            container.appendChild(wrap);
+
+        } else if (field.type === 'list') {
+            const v = Array.isArray(val) ? val.join('\n') : (val || '');
+            wrap.innerHTML = `
+                <label class="${cls.label}">${esc(field.label)}</label>
+                <textarea name="${field.name}" rows="4" placeholder="Um item por linha" oninput="onFieldChange()" class="${cls.textarea}">${esc(v)}</textarea>
+                <p class="text-[10px] text-gray-400 mt-0.5">Um item por linha</p>`;
+            container.appendChild(wrap);
+
+        } else if (field.type === 'checkbox') {
+            wrap.innerHTML = `
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="${field.name}" ${val ? 'checked' : ''} onchange="onFieldChange()"
+                        class="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand">
+                    <span class="text-xs text-gray-600">${esc(field.label)}</span>
+                </label>`;
+            container.appendChild(wrap);
+
+        } else if (field.type === 'color') {
+            const v = val || field.default || '#2323FA';
+            wrap.innerHTML = `
+                <label class="${cls.label}">${esc(field.label)}</label>
+                <div class="flex items-center gap-2">
+                    <input type="color" name="${field.name}" value="${esc(v)}" onchange="onFieldChange()"
+                        class="w-9 h-9 rounded border border-gray-200 cursor-pointer"
+                        oninput="this.nextElementSibling.value=this.value; onFieldChange()">
+                    <input type="text" value="${esc(v)}" class="${cls.input}"
+                        oninput="this.previousElementSibling.value=this.value; onFieldChange()">
+                </div>`;
+            container.appendChild(wrap);
+
+        } else if (field.type === 'number') {
+            const v = val !== undefined && val !== '' ? val : (field.default || 0);
+            wrap.innerHTML = `
+                <label class="${cls.label}">${esc(field.label)}</label>
+                <input type="number" name="${field.name}" value="${esc(v)}" oninput="onFieldChange()" class="${cls.input}">`;
+            container.appendChild(wrap);
+
+        } else if (field.type === 'select') {
+            const opts = (field.options || []).map(o =>
+                `<option value="${esc(o)}" ${val === o ? 'selected' : ''}>${esc(o)}</option>`
+            ).join('');
+            wrap.innerHTML = `
+                <label class="${cls.label}">${esc(field.label)}</label>
+                <select name="${field.name}" onchange="onFieldChange()" class="${cls.select}">${opts}</select>`;
+            container.appendChild(wrap);
+
+        } else {
+            wrap.innerHTML = `
+                <label class="${cls.label}">${esc(field.label)} ${requiredStar(field)}</label>
+                <input type="${field.type || 'text'}" name="${field.name}" value="${esc(val || '')}" oninput="onFieldChange()"
+                    class="${cls.input}" ${field.required ? 'required' : ''}>
+                ${helpText(field)}`;
+            container.appendChild(wrap);
+        }
+    });
+}
+
+// ─── Repeater helpers ─────────────────────────────────────────────────────────
+function addRepeaterItem(fieldName, subFieldsJson) {
+    const subFields = typeof subFieldsJson === 'string' ? JSON.parse(subFieldsJson) : subFieldsJson;
+    const idx = repeaterCounters[fieldName] || 0;
+    addRepeaterItemWithData(fieldName, subFields, idx, {});
+    repeaterCounters[fieldName] = idx + 1;
+    onFieldChange();
+}
+
+function addRepeaterItemWithData(fieldName, subFields, idx, itemData) {
+    const rc = document.getElementById('repeater_' + fieldName);
+    if (!rc) return;
+    const div = document.createElement('div');
+    div.className = 'bg-gray-50 rounded-lg p-3 space-y-2 relative';
+    let html = `<div class="flex items-center justify-between mb-1">
+        <span class="text-[9px] font-bold text-gray-400 uppercase">#${idx + 1}</span>
+        <button type="button" onclick="this.closest('.bg-gray-50').remove(); onFieldChange()"
+            class="w-5 h-5 rounded bg-red-50 text-red-400 hover:bg-red-100 flex items-center justify-center text-xs">
+            <i class="fa-solid fa-times"></i>
+        </button>
+    </div>`;
+    subFields.forEach(sf => {
+        const val = itemData[sf.name];
+        const inputName = `${fieldName}__${idx}__${sf.name}`;
+        if (sf.type === 'checkbox') {
+            html += `<label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="${inputName}" ${val ? 'checked' : ''} onchange="onFieldChange()" class="w-3.5 h-3.5 rounded border-gray-300 text-brand">
+                <span class="text-xs text-gray-600">${esc(sf.label)}</span></label>`;
+        } else if (sf.type === 'list') {
+            const lv = Array.isArray(val) ? val.join('\n') : (val || '');
+            html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
+                <textarea name="${inputName}" rows="3" oninput="onFieldChange()" class="${cls.subInput} resize-y" placeholder="Um por linha">${esc(lv)}</textarea></div>`;
+        } else if (sf.type === 'textarea') {
+            html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
+                <textarea name="${inputName}" rows="2" oninput="onFieldChange()" class="${cls.subInput} resize-y">${esc(val || '')}</textarea></div>`;
+        } else if (sf.type === 'select') {
+            const opts = (sf.options || []).map(o =>
+                `<option value="${esc(o)}" ${val===o?'selected':''}>${esc(o)}</option>`).join('');
+            html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
+                <select name="${inputName}" onchange="onFieldChange()" class="${cls.subInput} bg-white">${opts}</select></div>`;
+        } else if (sf.type === 'color') {
+            const cv = val || sf.default || '#2323FA';
+            html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
+                <div class="flex items-center gap-2">
+                    <input type="color" name="${inputName}" value="${esc(cv)}" class="w-7 h-7 rounded border border-gray-200 cursor-pointer" oninput="this.nextElementSibling.value=this.value; onFieldChange()">
+                    <input type="text" value="${esc(cv)}" class="${cls.subInput}" oninput="this.previousElementSibling.value=this.value; onFieldChange()">
+                </div></div>`;
+        } else if (sf.type === 'image') {
+            const imgPrev = val ? `<div class="mb-1"><img src="${esc(val)}" class="max-h-16 rounded border border-gray-200 object-cover"></div>` : '';
+            html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
+                ${imgPrev}
+                <input type="file" name="${inputName}" accept="image/*" onchange="onFieldChange()"
+                    class="w-full text-xs text-gray-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-brand/10 file:text-brand">
+                <input type="hidden" name="${inputName}_current" value="${esc(val || '')}"></div>`;
+        } else {
+            html += `<div><label class="${cls.subLabel}">${esc(sf.label)}</label>
+                <input type="${sf.type||'text'}" name="${inputName}" value="${esc(val||'')}" oninput="onFieldChange()" class="${cls.subInput}"></div>`;
+        }
+    });
+    div.innerHTML = html;
+    rc.appendChild(div);
+    repeaterCounters[fieldName] = Math.max(repeaterCounters[fieldName] || 0, idx + 1);
+}
+
+// ─── Auto-save com debounce ───────────────────────────────────────────────────
+function onFieldChange() {
+    clearTimeout(autoSaveTimer);
+    clearTimeout(previewTimer);
+    autoSaveTimer = setTimeout(() => autoSave(selectedId), AUTOSAVE_DELAY);
+    previewTimer  = setTimeout(reloadPreview, PREVIEW_DELAY);
+}
+
+function collectCurrentData(section) {
+    const container = document.getElementById('form-fields');
+    const fd = {};
+    (section.schema || []).forEach(field => {
+        const { name, type: ftype } = field;
+        if (ftype === 'repeater') {
+            fd[name] = section.data[name]; // mantém state original (complexo de parsear)
+        } else if (ftype === 'checkbox') {
+            const el = container.querySelector(`input[name="${name}"]`);
+            fd[name] = el ? el.checked : false;
+        } else if (ftype === 'list') {
+            const el = container.querySelector(`textarea[name="${name}"]`);
+            fd[name] = el ? el.value.split('\n').filter(l => l.trim()) : [];
+        } else if (ftype === 'image') {
+            const el = container.querySelector(`input[name="${name}_current"]`);
+            fd[name] = el ? el.value : (section.data[name] || '');
+        } else if (ftype === 'number') {
+            const el = container.querySelector(`input[name="${name}"]`);
+            fd[name] = el ? (parseInt(el.value) || 0) : 0;
+        } else {
+            const el = container.querySelector(`[name="${name}"]`);
+            fd[name] = el ? el.value : '';
+        }
+    });
+    return fd;
+}
+
+async function autoSave(compId) {
+    if (!compId) return;
+    const fd = new FormData();
+
+    // Coleta campos do form-fields
+    const container = document.getElementById('form-fields');
+    container.querySelectorAll('input[name], textarea[name], select[name]').forEach(el => {
+        if (el.type === 'checkbox') {
+            fd.append(el.name, el.checked ? 'on' : '');
+        } else if (el.type === 'file') {
+            if (el.files.length) fd.append(el.name, el.files[0]);
+        } else {
+            fd.append(el.name, el.value);
+        }
+    });
+
+    // Campos de settings
+    fd.append('is_active', document.getElementById('field-is_active').checked ? 'on' : '');
+    fd.append('css_classes', document.getElementById('field-css_classes').value);
+
+    try {
+        const res = await fetch(compUrl(_tplAutosave, compId), {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: fd,
+        });
+        if (res.ok) {
+            showSaveStatus();
+            // Atualiza estado local com dados atuais do form
+            const section = sections.find(s => s.id === compId);
+            if (section) {
+                section.data = collectCurrentData(section);
+                section.is_active = document.getElementById('field-is_active').checked;
+                section.css_classes = document.getElementById('field-css_classes').value;
+                renderComponentList();
+                document.querySelectorAll('.comp-card').forEach(el => {
+                    el.classList.toggle('selected', parseInt(el.dataset.id) === selectedId);
+                });
+            }
+        } else {
+            showSaveError();
+        }
+    } catch(e) { showSaveError(); }
+}
+
+function showSaveStatus() {
+    const el = document.getElementById('save-status');
+    el.innerHTML = '<i class="fa-solid fa-check-circle text-green-500 mr-0.5"></i> Salvo';
+    el.className = 'text-xs text-gray-400 save-pulse';
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => { el.classList.add('hidden'); }, 3000);
+}
+
+function showSaveError() {
+    const el = document.getElementById('save-status');
+    el.innerHTML = '<i class="fa-solid fa-circle-exclamation text-red-400 mr-0.5"></i> Erro ao salvar';
+    el.className = 'text-xs text-red-400';
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => { el.classList.add('hidden'); }, 5000);
+}
+
+function reloadPreview() {
+    const iframe = document.getElementById('preview-frame');
+    document.getElementById('preview-loading').classList.remove('hidden');
+    iframe.src = iframe.src;
+}
+
+// ─── Salvar com revisão ───────────────────────────────────────────────────────
+async function saveWithRevision() {
+    // Faz autosave primeiro se houver seleção
+    if (selectedId) {
+        clearTimeout(autoSaveTimer);
+        await autoSave(selectedId);
+    }
+    // Cria revisão
+    const btn = document.querySelector('button[onclick="saveWithRevision()"]');
+    try {
+        const fd = new FormData();
+        fd.append('comment', 'Salvo pelo editor visual');
+        const res = await fetch(revisionCreateUrl, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: fd,
+        });
+        if (res.ok) {
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Salvo!';
+            btn.classList.add('bg-green-600');
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar';
+                btn.classList.remove('bg-green-600');
+            }, 2500);
+        } else {
+            btn.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Erro!';
+            setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar'; }, 3000);
+        }
+    } catch(e) {
+        btn.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Erro!';
+        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar'; }, 3000);
+    }
+}
+
+// ─── Adicionar componente ─────────────────────────────────────────────────────
+function showAddModal() {
+    const list = document.getElementById('types-list');
+    list.innerHTML = componentTypes.map(t => `
+        <button onclick="addComponent(${t.id})"
+                class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-brand/5 transition flex items-center gap-3 group">
+            <div class="w-9 h-9 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-brand/10 group-hover:text-brand transition text-sm flex-shrink-0">
+                <i class="${esc(t.icon)}"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-800 group-hover:text-brand transition">${esc(t.name)}</p>
+                ${t.description ? `<p class="text-xs text-gray-400 truncate">${esc(t.description)}</p>` : ''}
+            </div>
+            <i class="fa-solid fa-plus text-xs text-gray-300 group-hover:text-brand transition"></i>
+        </button>
+    `).join('');
+    document.getElementById('add-modal').classList.remove('hidden');
+}
+
+function hideAddModal() {
+    document.getElementById('add-modal').classList.add('hidden');
+}
+
+async function addComponent(typeId) {
+    hideAddModal();
+    const fd = new FormData();
+    fd.append('component_type', typeId);
+    try {
+        const res = await fetch(addUrl, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+            body: fd,
+        });
+        if (res.ok) {
+            const data = await res.json();
+            sections.push(data);
+            renderComponentList();
+            selectComponent(data.id);
+            reloadPreview();
+        }
+    } catch(e) { showSaveError(); }
+}
+
+// ─── Excluir componente ───────────────────────────────────────────────────────
+async function deleteComponent(id) {
+    if (!confirm('Remover este componente?')) return;
+    try {
+        const fd = new FormData();
+        const res = await fetch(compUrl(_tplDelete, id), {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+            body: fd,
+        });
+        if (res.ok) {
+            sections = sections.filter(s => s.id !== id);
+            if (selectedId === id) {
+                selectedId = null;
+                document.getElementById('form-fields').innerHTML = '';
+                document.getElementById('fields-header').classList.add('hidden');
+                document.getElementById('comp-settings').classList.add('hidden');
+                document.getElementById('fields-empty').classList.remove('hidden');
+            }
+            renderComponentList();
+            reloadPreview();
+        }
+    } catch(e) { showSaveError(); }
+}
+
+// ─── Duplicar componente ──────────────────────────────────────────────────────
+async function duplicateComponent(id) {
+    try {
+        const fd = new FormData();
+        const res = await fetch(compUrl(_tplDuplicate, id), {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+            body: fd,
+        });
+        if (res.ok) {
+            const data = await res.json();
+            const origIdx = sections.findIndex(s => s.id === id);
+            sections.splice(origIdx + 1, 0, data);
+            renderComponentList();
+            selectComponent(data.id);
+            reloadPreview();
+        }
+    } catch(e) { showSaveError(); }
+}
+
+// ─── Drag & drop reorder ──────────────────────────────────────────────────────
+function initDragDrop() {
+    const list = document.getElementById('comp-list');
+    let dragItem = null;
+
+    list.querySelectorAll('.comp-card').forEach(el => {
+        const handle = el.querySelector('.drag-handle');
+        if (!handle) return;
+
+        handle.addEventListener('mousedown', () => { el.draggable = true; });
+
+        el.addEventListener('dragstart', e => {
+            dragItem = el;
+            el.classList.add('opacity-40');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        el.addEventListener('dragend', () => {
+            el.draggable = false;
+            el.classList.remove('opacity-40');
+            list.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over'));
+            saveOrder();
+        });
+
+        el.addEventListener('dragover', e => {
+            e.preventDefault();
+            if (!dragItem || dragItem === el) return;
+            const rect = el.getBoundingClientRect();
+            if (e.clientY < rect.top + rect.height / 2) {
+                list.insertBefore(dragItem, el);
+            } else {
+                list.insertBefore(dragItem, el.nextSibling);
+            }
+        });
+    });
+}
+
+function saveOrder() {
+    const cards = document.getElementById('comp-list').querySelectorAll('.comp-card[data-id]');
+    const order = [];
+    cards.forEach((el, i) => {
+        const id = parseInt(el.dataset.id);
+        order.push({ id, order: i });
+        const s = sections.find(x => x.id === id);
+        if (s) s.order = i;
+    });
+    sections.sort((a, b) => a.order - b.order);
+    fetch(reorderUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify(order),
+    }).then(() => reloadPreview());
+}
+
+// ─── Fechar modal ao clicar fora ──────────────────────────────────────────────
+document.getElementById('add-modal').addEventListener('click', function(e) {
+    if (e.target === this) hideAddModal();
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderComponentList();
+if (sections.length) selectComponent(sections[0].id);
+</script>
+</body>
+</html>

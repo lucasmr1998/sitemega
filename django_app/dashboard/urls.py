@@ -36,6 +36,7 @@ urlpatterns = [
     path('paginas/<int:pk>', builder_views.page_form, name='page_edit'),
     path('paginas/<int:pk>/excluir', builder_views.page_delete, name='page_delete'),
     path('paginas/<int:pk>/editor', builder_views.page_editor, name='page_editor'),
+    path('paginas/<int:pk>/visual', builder_views.visual_editor, name='visual_editor'),
     path('paginas/<int:pk>/componente/novo', builder_views.component_add, name='component_add'),
     path('paginas/componente/<int:pk>/editar', builder_views.component_edit, name='component_edit'),
     path('paginas/componente/<int:pk>/excluir', builder_views.component_delete, name='component_delete'),
@@ -45,6 +46,7 @@ urlpatterns = [
     path('paginas/componente/<int:pk>/autosave', builder_views.component_autosave, name='component_autosave'),
     path('paginas/componente/<int:pk>/duplicar', builder_views.component_duplicate, name='component_duplicate'),
     path('paginas/<int:pk>/revisoes', builder_views.revision_list, name='revision_list'),
+    path('paginas/<int:pk>/revisoes/criar', builder_views.revision_create, name='revision_create'),
     path('paginas/<int:pk>/revisoes/<int:rev_pk>/restaurar', builder_views.revision_restore, name='revision_restore'),
     path('componentes', builder_views.components_list, name='components_list'),
 
