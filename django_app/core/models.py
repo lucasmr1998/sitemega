@@ -34,6 +34,16 @@ class SiteConfig(models.Model):
     area_cliente_enabled = models.BooleanField('Botão "Área do Cliente" ativo', default=True)
     area_cliente_link = models.CharField('Link "Área do Cliente"', max_length=200, default='#area-cliente')
 
+    # Pixels & Scripts de rastreamento
+    gtm_id = models.CharField('Google Tag Manager ID', max_length=20, blank=True,
+                               help_text='Ex: GTM-XXXXXXX')
+    facebook_pixel_id = models.CharField('Facebook Pixel ID', max_length=30, blank=True,
+                                         help_text='Ex: 1234567890123456')
+    custom_head_scripts = models.TextField('Scripts no <head>', blank=True,
+                                           help_text='Scripts adicionais no <head> (Google Analytics, etc.)')
+    custom_body_scripts = models.TextField('Scripts no <body>', blank=True,
+                                           help_text='Scripts adicionais antes do </body>')
+
     # Footer
     footer_text = models.CharField('Texto do rodapé', max_length=300, blank=True,
                                    default='A melhor conexão para você e sua empresa.')
