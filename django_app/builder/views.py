@@ -1,7 +1,7 @@
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404, redirect
 
-from .models import Page
+from .models import Page, PageView
 
 
 def page_view(request, slug=None):
@@ -12,6 +12,9 @@ def page_view(request, slug=None):
             raise Http404('Nenhuma página inicial configurada')
     else:
         page = get_object_or_404(Page, slug=slug, status='published')
+
+    # Track pageview
+    PageView.record(page)
 
     sections = page.get_sections()
 

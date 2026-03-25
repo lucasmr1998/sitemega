@@ -35,6 +35,16 @@
         <a href="{% url 'dashboard:revision_list' pk=page_obj.pk %}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2">
             <i class="fa-solid fa-clock-rotate-left text-xs"></i> Revisões
         </a>
+        <a href="{% url 'dashboard:page_export' pk=page_obj.pk %}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2" title="Exportar JSON">
+            <i class="fa-solid fa-download text-xs"></i>
+        </a>
+        <form method="post" action="{% url 'dashboard:template_save' pk=page_obj.pk %}" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="template_name" value="Template de {{ page_obj.title }}">
+            <button type="submit" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2" title="Salvar como template">
+                <i class="fa-solid fa-layer-group text-xs"></i>
+            </button>
+        </form>
         <a href="{% url 'dashboard:page_edit' pk=page_obj.pk %}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-2">
             <i class="fa-solid fa-gear text-xs"></i> Config
         </a>

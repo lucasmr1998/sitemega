@@ -8,8 +8,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 
 from django.db import models
+from django.utils.text import slugify
 
-from builder.models import Page, ComponentType, PageComponent, PageRevision
+from builder.models import Page, ComponentType, PageComponent, PageRevision, PageTemplate, PageView
 
 
 LOGIN_URL = '/painel/login'
@@ -285,6 +286,173 @@ def revision_restore(request, pk, rev_pk):
     revision.restore()
     messages.success(request, f'Página restaurada para revisão #{revision.revision_number}!')
     return redirect('dashboard:page_editor', pk=page.pk)
+
+
+# ─── Page Templates ─────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def templates_list(request):
+    templates = PageTemplate.objects.filter(is_active=True)
+    return render(request, 'dashboard/builder/templates_list.html', {
+        'sidebar_active': 'templates',
+        'templates': templates,
+    })
+
+
+@login_required(login_url=LOGIN_URL)
+@require_POST
+def template_save(request, pk):
+    """Salva a página atual como template reutilizável."""
+    page = get_object_or_404(Page, pk=pk)
+    name = request.POST.get('template_name', '').strip() or f'Template de {page.title}'
+    tpl = PageTemplate.create_from_page(page, name=name)
+    messages.success(request, f'Template "{tpl.name}" salvo!')
+    return redirect('dashboard:page_editor', pk=page.pk)
+
+
+@login_required(login_url=LOGIN_URL)
+@require_POST
+def template_apply(request, pk):
+    """Aplica um template a uma nova página."""
+    tpl = get_object_or_404(PageTemplate, pk=pk)
+    slug_base = slugify(tpl.name) or 'pagina'
+    new_page = Page.objects.create(
+        title=f'{tpl.name}',
+        slug=f'{slug_base}-{Page.objects.count() + 1}',
+        status='draft',
+        **tpl.page_defaults,
+    )
+    tpl.apply_to_page(new_page)
+    messages.success(request, f'Página criada a partir do template "{tpl.name}"!')
+    return redirect('dashboard:page_editor', pk=new_page.pk)
+
+
+@login_required(login_url=LOGIN_URL)
+@require_POST
+def template_delete(request, pk):
+    tpl = get_object_or_404(PageTemplate, pk=pk)
+    tpl.delete()
+    messages.success(request, 'Template excluído!')
+    return redirect('dashboard:templates_list')
+
+
+# ─── Import / Export ────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def page_export(request, pk):
+    """Exporta página como JSON para download."""
+    page = get_object_or_404(Page, pk=pk)
+    components = []
+    for comp in page.sections.all():
+        components.append({
+            'component_type_slug': comp.component_type.slug,
+            'data': comp.data,
+            'order': comp.order,
+            'is_active': comp.is_active,
+            'css_classes': comp.css_classes,
+        })
+    export = {
+        'title': page.title,
+        'slug': page.slug,
+        'meta_title': page.meta_title,
+        'meta_description': page.meta_description,
+        'show_header': page.show_header,
+        'show_footer': page.show_footer,
+        'components': components,
+    }
+    response = JsonResponse(export, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+    response['Content-Disposition'] = f'attachment; filename="{page.slug}.json"'
+    return response
+
+
+@login_required(login_url=LOGIN_URL)
+@require_POST
+def page_import(request):
+    """Importa página de um arquivo JSON."""
+    uploaded = request.FILES.get('file')
+    if not uploaded:
+        messages.error(request, 'Nenhum arquivo enviado.')
+        return redirect('dashboard:pages_list')
+
+    try:
+        data = json.loads(uploaded.read().decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        messages.error(request, 'Arquivo JSON inválido.')
+        return redirect('dashboard:pages_list')
+
+    # Avoid slug collision
+    base_slug = data.get('slug', 'importada')
+    slug = base_slug
+    counter = 1
+    while Page.objects.filter(slug=slug).exists():
+        slug = f'{base_slug}-{counter}'
+        counter += 1
+
+    page = Page.objects.create(
+        title=data.get('title', 'Página Importada'),
+        slug=slug,
+        meta_title=data.get('meta_title', ''),
+        meta_description=data.get('meta_description', ''),
+        show_header=data.get('show_header', True),
+        show_footer=data.get('show_footer', True),
+        status='draft',
+    )
+
+    for item in data.get('components', []):
+        ct_slug = item.get('component_type_slug', '')
+        ct = ComponentType.objects.filter(slug=ct_slug).first()
+        if ct:
+            PageComponent.objects.create(
+                page=page,
+                component_type=ct,
+                data=item.get('data', {}),
+                order=item.get('order', 0),
+                is_active=item.get('is_active', True),
+                css_classes=item.get('css_classes', ''),
+            )
+
+    messages.success(request, f'Página "{page.title}" importada como rascunho!')
+    return redirect('dashboard:page_editor', pk=page.pk)
+
+
+# ─── Analytics ──────────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def analytics_view(request):
+    from datetime import timedelta
+    from django.utils import timezone
+    from django.db.models import Sum
+
+    today = timezone.localdate()
+    thirty_days_ago = today - timedelta(days=29)
+
+    # Total views last 30 days
+    total_views = PageView.objects.filter(date__gte=thirty_days_ago).aggregate(
+        total=Sum('count'))['total'] or 0
+
+    # Daily chart (30 days)
+    labels, data = [], []
+    for i in range(30):
+        day = thirty_days_ago + timedelta(days=i)
+        labels.append(day.strftime('%d/%m'))
+        count = PageView.objects.filter(date=day).aggregate(total=Sum('count'))['total'] or 0
+        data.append(count)
+
+    # Top pages
+    top_pages = (
+        PageView.objects.filter(date__gte=thirty_days_ago)
+        .values('page__title', 'page__slug')
+        .annotate(total=Sum('count'))
+        .order_by('-total')[:10]
+    )
+
+    return render(request, 'dashboard/builder/analytics.html', {
+        'sidebar_active': 'analytics',
+        'total_views': total_views,
+        'chart_labels': json.dumps(labels),
+        'chart_data': json.dumps(data),
+        'top_pages': top_pages,
+    })
 
 
 # ─── Components Library ──────────────────────────────────────────────────────

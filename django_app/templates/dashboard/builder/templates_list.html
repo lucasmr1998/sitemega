@@ -1,0 +1,56 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Templates{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Templates de Página</h1>
+        <p class="text-gray-500 text-sm mt-1">Layouts pré-definidos para criar páginas rapidamente.</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for tpl in templates %}
+    <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition group">
+        {% if tpl.thumbnail %}
+        <div class="aspect-video rounded-lg overflow-hidden bg-gray-100 mb-4">
+            <img src="{{ tpl.thumbnail.url }}" alt="{{ tpl.name }}" class="w-full h-full object-cover">
+        </div>
+        {% else %}
+        <div class="aspect-video rounded-lg bg-gradient-to-br from-brand/5 to-brand/20 flex items-center justify-center mb-4">
+            <i class="fa-solid fa-layer-group text-3xl text-brand/40"></i>
+        </div>
+        {% endif %}
+
+        <h3 class="font-bold text-gray-900">{{ tpl.name }}</h3>
+        {% if tpl.description %}
+        <p class="text-xs text-gray-400 mt-1">{{ tpl.description }}</p>
+        {% endif %}
+        <p class="text-xs text-gray-300 mt-1">{{ tpl.components_data|length }} componente{{ tpl.components_data|length|pluralize:"s" }}</p>
+
+        <div class="flex items-center gap-2 mt-4">
+            <form method="post" action="{% url 'dashboard:template_apply' pk=tpl.pk %}" class="flex-1">
+                {% csrf_token %}
+                <button type="submit" class="w-full text-center py-2 bg-brand/10 text-brand rounded-lg text-xs font-medium hover:bg-brand/20 transition">
+                    <i class="fa-solid fa-plus mr-1"></i> Criar página
+                </button>
+            </form>
+            <form method="post" action="{% url 'dashboard:template_delete' pk=tpl.pk %}" class="inline"
+                  onsubmit="return confirm('Excluir template?')">
+                {% csrf_token %}
+                <button type="submit" class="w-9 h-9 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition text-xs">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-3 text-center py-16 bg-white rounded-xl border border-gray-200">
+        <i class="fa-solid fa-layer-group text-4xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500 text-sm mb-2">Nenhum template salvo.</p>
+        <p class="text-gray-400 text-xs">Acesse o editor de uma página e clique "Salvar como template".</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

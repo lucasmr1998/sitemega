@@ -47,6 +47,19 @@ urlpatterns = [
     path('paginas/<int:pk>/revisoes/<int:rev_pk>/restaurar', builder_views.revision_restore, name='revision_restore'),
     path('componentes', builder_views.components_list, name='components_list'),
 
+    # Templates
+    path('templates', builder_views.templates_list, name='templates_list'),
+    path('paginas/<int:pk>/salvar-template', builder_views.template_save, name='template_save'),
+    path('templates/<int:pk>/aplicar', builder_views.template_apply, name='template_apply'),
+    path('templates/<int:pk>/excluir', builder_views.template_delete, name='template_delete'),
+
+    # Import / Export
+    path('paginas/<int:pk>/exportar', builder_views.page_export, name='page_export'),
+    path('paginas/importar', builder_views.page_import, name='page_import'),
+
+    # Analytics
+    path('analytics', builder_views.analytics_view, name='analytics'),
+
     # Media Library
     path('media', media_views.media_list, name='media_list'),
     path('media/upload', media_views.media_upload, name='media_upload'),

@@ -183,3 +183,88 @@ class PageRevision(models.Model):
                 is_active=item.get('is_active', True),
                 css_classes=item.get('css_classes', ''),
             )
+
+
+class PageTemplate(models.Model):
+    """Preset reutilizável — salva layout de uma página como template."""
+    name = models.CharField('Nome', max_length=200)
+    description = models.CharField('Descrição', max_length=500, blank=True)
+    thumbnail = models.ImageField('Thumbnail', upload_to='templates/', blank=True)
+    components_data = models.JSONField('Componentes', default=list,
+                                        help_text='Snapshot dos componentes')
+    page_defaults = models.JSONField('Config padrão', default=dict,
+                                      help_text='show_header, show_footer, etc.')
+    is_active = models.BooleanField('Ativo', default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Template de Página'
+        verbose_name_plural = 'Templates de Página'
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def create_from_page(cls, page, name, description=''):
+        snapshot = []
+        for comp in page.sections.all():
+            snapshot.append({
+                'component_type_id': comp.component_type_id,
+                'data': comp.data,
+                'order': comp.order,
+                'is_active': comp.is_active,
+                'css_classes': comp.css_classes,
+            })
+        return cls.objects.create(
+            name=name, description=description,
+            components_data=snapshot,
+            page_defaults={
+                'show_header': page.show_header,
+                'show_footer': page.show_footer,
+            },
+        )
+
+    def apply_to_page(self, page):
+        """Aplica este template a uma página (substitui componentes)."""
+        page.sections.all().delete()
+        for item in self.components_data:
+            PageComponent.objects.create(
+                page=page,
+                component_type_id=item['component_type_id'],
+                data=item['data'],
+                order=item['order'],
+                is_active=item.get('is_active', True),
+                css_classes=item.get('css_classes', ''),
+            )
+        for k, v in self.page_defaults.items():
+            if hasattr(page, k):
+                setattr(page, k, v)
+        page.save()
+
+
+class PageView(models.Model):
+    """Contador de pageviews por página por dia."""
+    page = models.ForeignKey(Page, related_name='views', on_delete=models.CASCADE)
+    date = models.DateField('Data')
+    count = models.PositiveIntegerField('Views', default=0)
+
+    class Meta:
+        unique_together = [['page', 'date']]
+        ordering = ['-date']
+        verbose_name = 'Pageview'
+        verbose_name_plural = 'Pageviews'
+        indexes = [
+            models.Index(fields=['page', 'date']),
+        ]
+
+    def __str__(self):
+        return f'{self.page.title} — {self.date} ({self.count})'
+
+    @classmethod
+    def record(cls, page):
+        from django.utils import timezone
+        today = timezone.localdate()
+        obj, _ = cls.objects.get_or_create(page=page, date=today)
+        obj.count = models.F('count') + 1
+        obj.save(update_fields=['count'])
