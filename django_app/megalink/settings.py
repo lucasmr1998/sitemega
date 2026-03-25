@@ -26,7 +26,6 @@ INSTALLED_APPS = [
     'colorfield',
     # Local apps
     'core',
-    'pages',
     'leads',
     'dashboard',
     'builder',
