@@ -6,11 +6,13 @@ from django.db import models
 
 
 def generate_code(length=6):
+    """Generate unique code with atomic check via DB constraint."""
     chars = string.ascii_letters + string.digits
-    while True:
+    for _ in range(100):  # max retries
         code = ''.join(random.choices(chars, k=length))
         if not ShortLink.objects.filter(code=code).exists():
             return code
+    raise RuntimeError('Could not generate unique code after 100 attempts')
 
 
 class ShortLink(models.Model):
@@ -37,7 +39,17 @@ class ShortLink(models.Model):
             self.code = generate_code()
         if not self.title:
             self.title = self.destination_url[:100]
-        super().save(*args, **kwargs)
+        # Retry with new code on duplicate (race condition safety)
+        from django.db import IntegrityError
+        for attempt in range(5):
+            try:
+                super().save(*args, **kwargs)
+                return
+            except IntegrityError:
+                if attempt < 4 and not kwargs.get('force_update'):
+                    self.code = generate_code()
+                else:
+                    raise
 
     @property
     def short_url(self):

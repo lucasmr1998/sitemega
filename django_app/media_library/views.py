@@ -1,3 +1,5 @@
+import os
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -7,6 +9,13 @@ from django.views.decorators.http import require_POST
 from .models import MediaFile
 
 LOGIN_URL = '/painel/login'
+
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+ALLOWED_EXTENSIONS = {
+    '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp',  # images
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx',                   # docs
+    '.mp4', '.webm', '.mov',                                     # video
+}
 
 
 @login_required(login_url=LOGIN_URL)
@@ -33,6 +42,18 @@ def media_upload(request):
     uploaded = request.FILES.get('file')
     if not uploaded:
         return JsonResponse({'error': 'Nenhum arquivo enviado'}, status=400)
+
+    # Validate file size
+    if uploaded.size > MAX_FILE_SIZE:
+        return JsonResponse({'error': f'Arquivo muito grande (máx {MAX_FILE_SIZE // 1024 // 1024}MB)'}, status=400)
+
+    # Validate extension
+    ext = os.path.splitext(uploaded.name)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        return JsonResponse({'error': f'Tipo de arquivo não permitido: {ext}'}, status=400)
+
+    # Sanitize filename (remove path traversal)
+    uploaded.name = os.path.basename(uploaded.name).replace('..', '_')
 
     media = MediaFile(file=uploaded, uploaded_by=request.user)
     media.save()

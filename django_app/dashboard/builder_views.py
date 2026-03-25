@@ -1,7 +1,6 @@
 import json
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.core.files.storage import default_storage
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -11,14 +10,12 @@ from django.db import models
 from django.utils.text import slugify
 
 from builder.models import Page, ComponentType, PageComponent, PageRevision, PageTemplate, PageView
-
-
-LOGIN_URL = '/painel/login'
+from .permissions import role_required
 
 
 # ─── Pages List ───────────────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.view')
 def pages_list(request):
     pages = Page.objects.all()
     return render(request, 'dashboard/builder/pages_list.html', {
@@ -29,7 +26,7 @@ def pages_list(request):
 
 # ─── Page Form (create/edit) ─────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.edit')
 def page_form(request, pk=None):
     instance = get_object_or_404(Page, pk=pk) if pk else None
 
@@ -49,8 +46,21 @@ def page_form(request, pk=None):
         publish_at = request.POST.get('publish_at', '').strip() or None
         unpublish_at = request.POST.get('unpublish_at', '').strip() or None
 
+        import re
+        error = None
         if not title or not slug:
-            messages.error(request, 'Título e URL são obrigatórios.')
+            error = 'Título e URL são obrigatórios.'
+        elif not re.match(r'^[a-z0-9][a-z0-9-]*$', slug):
+            error = 'URL deve conter apenas letras minúsculas, números e hífens.'
+        elif len(meta) > 300:
+            error = 'Meta descrição deve ter no máximo 300 caracteres.'
+        elif publish_at and unpublish_at and publish_at >= unpublish_at:
+            error = 'Data de despublicação deve ser posterior à de publicação.'
+        elif status not in ('draft', 'published', 'scheduled'):
+            error = 'Status inválido.'
+
+        if error:
+            messages.error(request, error)
         else:
             fields = dict(
                 title=title, slug=slug, meta_description=meta,
@@ -77,7 +87,7 @@ def page_form(request, pk=None):
 
 # ─── Page Delete ──────────────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.delete')
 @require_POST
 def page_delete(request, pk):
     page = get_object_or_404(Page, pk=pk)
@@ -88,7 +98,7 @@ def page_delete(request, pk):
 
 # ─── Page Editor (visual builder) ────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.view')
 def page_editor(request, pk):
     page = get_object_or_404(Page, pk=pk)
     sections = page.sections.select_related('component_type').order_by('order')
@@ -104,7 +114,7 @@ def page_editor(request, pk):
 
 # ─── Add Component to Page ───────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.create')
 @require_POST
 def component_add(request, pk):
     page = get_object_or_404(Page, pk=pk)
@@ -134,7 +144,7 @@ def component_add(request, pk):
 
 # ─── Edit Component ──────────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.edit')
 def component_edit(request, pk):
     comp = get_object_or_404(PageComponent, pk=pk)
     schema = comp.component_type.schema
@@ -160,7 +170,7 @@ def component_edit(request, pk):
 
 # ─── Delete Component ────────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('component.delete')
 @require_POST
 def component_delete(request, pk):
     comp = get_object_or_404(PageComponent, pk=pk)
@@ -172,7 +182,7 @@ def component_delete(request, pk):
 
 # ─── Reorder Components ──────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.edit')
 @require_POST
 def component_reorder(request, pk):
     page = get_object_or_404(Page, pk=pk)
@@ -187,7 +197,7 @@ def component_reorder(request, pk):
 
 # ─── Page Preview (iframe-friendly) ──────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.view')
 def page_preview(request, pk):
     page = get_object_or_404(Page, pk=pk)
     sections = page.sections.filter(is_active=True).select_related('component_type')
@@ -199,7 +209,7 @@ def page_preview(request, pk):
 
 # ─── Autosave Component ─────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.edit')
 @require_POST
 def component_autosave(request, pk):
     comp = get_object_or_404(PageComponent, pk=pk)
@@ -214,7 +224,7 @@ def component_autosave(request, pk):
 
 # ─── Duplicate Component ────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.create')
 @require_POST
 def component_duplicate(request, pk):
     comp = get_object_or_404(PageComponent, pk=pk)
@@ -237,7 +247,7 @@ def component_duplicate(request, pk):
 
 # ─── Duplicate Page ─────────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.create')
 @require_POST
 def page_duplicate(request, pk):
     page = get_object_or_404(Page, pk=pk)
@@ -265,7 +275,7 @@ def page_duplicate(request, pk):
 
 # ─── Revisions ──────────────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('revision.view')
 def revision_list(request, pk):
     page = get_object_or_404(Page, pk=pk)
     revisions = page.revisions.select_related('created_by')[:50]
@@ -276,7 +286,7 @@ def revision_list(request, pk):
     })
 
 
-@login_required(login_url=LOGIN_URL)
+@role_required('revision.restore')
 @require_POST
 def revision_restore(request, pk, rev_pk):
     page = get_object_or_404(Page, pk=pk)
@@ -290,7 +300,7 @@ def revision_restore(request, pk, rev_pk):
 
 # ─── Page Templates ─────────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.view')
 def templates_list(request):
     templates = PageTemplate.objects.filter(is_active=True)
     return render(request, 'dashboard/builder/templates_list.html', {
@@ -299,7 +309,7 @@ def templates_list(request):
     })
 
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.create')
 @require_POST
 def template_save(request, pk):
     """Salva a página atual como template reutilizável."""
@@ -310,7 +320,7 @@ def template_save(request, pk):
     return redirect('dashboard:page_editor', pk=page.pk)
 
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.create')
 @require_POST
 def template_apply(request, pk):
     """Aplica um template a uma nova página."""
@@ -327,7 +337,7 @@ def template_apply(request, pk):
     return redirect('dashboard:page_editor', pk=new_page.pk)
 
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.delete')
 @require_POST
 def template_delete(request, pk):
     tpl = get_object_or_404(PageTemplate, pk=pk)
@@ -338,7 +348,7 @@ def template_delete(request, pk):
 
 # ─── Import / Export ────────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.view')
 def page_export(request, pk):
     """Exporta página como JSON para download."""
     page = get_object_or_404(Page, pk=pk)
@@ -365,7 +375,7 @@ def page_export(request, pk):
     return response
 
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.create')
 @require_POST
 def page_import(request):
     """Importa página de um arquivo JSON."""
@@ -417,7 +427,7 @@ def page_import(request):
 
 # ─── Analytics ──────────────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.view')
 def analytics_view(request):
     from datetime import timedelta
     from django.utils import timezone
@@ -457,7 +467,7 @@ def analytics_view(request):
 
 # ─── Components Library ──────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
+@role_required('page.view')
 def components_list(request):
     types = ComponentType.objects.all()
     return render(request, 'dashboard/builder/components_list.html', {

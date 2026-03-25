@@ -8,6 +8,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
 from builder.models import Page, PageComponent
+from django.core.cache import cache
+
 from core.models import SiteConfig, MenuItem, FooterColumn
 from leads.models import Lead
 
@@ -15,6 +17,14 @@ from .forms import SiteConfigForm, MenuItemForm, FooterColumnForm
 
 
 LOGIN_URL = '/painel/login'
+MAX_LOGIN_ATTEMPTS = 5
+
+
+def _get_client_ip(request):
+    xff = request.META.get('HTTP_X_FORWARDED_FOR')
+    if xff:
+        return xff.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
 
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -22,14 +32,30 @@ LOGIN_URL = '/painel/login'
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard:index')
+
+    error = False
+    blocked = False
+
     if request.method == 'POST':
-        user = authenticate(request,
-                            username=request.POST.get('username'),
-                            password=request.POST.get('password'))
-        if user:
-            login(request, user)
-            return redirect('dashboard:index')
-    return render(request, 'dashboard/login.html', {'form': True if request.method == 'POST' else False})
+        ip = _get_client_ip(request)
+        rate_key = f'login_attempts:{ip}'
+        attempts = cache.get(rate_key, 0)
+
+        if attempts >= MAX_LOGIN_ATTEMPTS:
+            blocked = True
+        else:
+            user = authenticate(request,
+                                username=request.POST.get('username'),
+                                password=request.POST.get('password'))
+            if user:
+                cache.delete(rate_key)
+                login(request, user)
+                return redirect('dashboard:index')
+            else:
+                cache.set(rate_key, attempts + 1, 3600)  # 1 hour window
+                error = True
+
+    return render(request, 'dashboard/login.html', {'error': error, 'blocked': blocked})
 
 
 def logout_view(request):
@@ -62,7 +88,7 @@ def index(request):
         'leads_today': Lead.objects.filter(created_at__date=today).count(),
         'active_pages': Page.objects.filter(status='published').count(),
         'total_components': PageComponent.objects.filter(is_active=True).count(),
-        'recent_leads': Lead.objects.all()[:5],
+        'recent_leads': Lead.objects.order_by('-created_at')[:5],
         'chart_labels': json.dumps(labels),
         'chart_data': json.dumps(data),
         'content_counts': content_counts,

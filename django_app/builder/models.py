@@ -172,17 +172,22 @@ class PageRevision(models.Model):
         )
 
     def restore(self):
-        """Restaura a página para este snapshot."""
-        self.page.sections.all().delete()
-        for item in self.data:
-            PageComponent.objects.create(
-                page=self.page,
-                component_type_id=item['component_type_id'],
-                data=item['data'],
-                order=item['order'],
-                is_active=item.get('is_active', True),
-                css_classes=item.get('css_classes', ''),
-            )
+        """Restaura a página para este snapshot (atômico)."""
+        from django.db import transaction
+        with transaction.atomic():
+            self.page.sections.all().delete()
+            for item in self.data:
+                ct_id = item['component_type_id']
+                if not ComponentType.objects.filter(pk=ct_id).exists():
+                    continue  # Skip components with deleted types
+                PageComponent.objects.create(
+                    page=self.page,
+                    component_type_id=ct_id,
+                    data=item['data'],
+                    order=item['order'],
+                    is_active=item.get('is_active', True),
+                    css_classes=item.get('css_classes', ''),
+                )
 
 
 class PageTemplate(models.Model):
@@ -263,8 +268,11 @@ class PageView(models.Model):
 
     @classmethod
     def record(cls, page):
+        """Record a pageview. Uses UPDATE first (fast), falls back to INSERT."""
         from django.utils import timezone
         today = timezone.localdate()
-        obj, _ = cls.objects.get_or_create(page=page, date=today)
-        obj.count = models.F('count') + 1
-        obj.save(update_fields=['count'])
+        updated = cls.objects.filter(page=page, date=today).update(
+            count=models.F('count') + 1
+        )
+        if not updated:
+            cls.objects.get_or_create(page=page, date=today)

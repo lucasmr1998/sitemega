@@ -18,10 +18,10 @@ urlpatterns = [
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='sitemap'),
     # Builder pages (/p/slug, /lojas)
     path('', include('builder.urls')),
-    # Homepage (must be before shortener catch-all)
-    path('', homepage_view, name='homepage'),
-    # Shortener catch-all (last — /<code>)
+    # Shortener catch-all BEFORE homepage (/<code> is more specific than '')
     path('<slug:code>', shortener_redirect, name='short_redirect'),
+    # Homepage (empty path — last)
+    path('', homepage_view, name='homepage'),
 ]
 
 if settings.DEBUG:

@@ -58,9 +58,11 @@
     </form>
 </div>
 
+{{ comp.data|json_script:"comp-data" }}
+{{ schema|json_script:"schema-data" }}
 <script>
-const compData = {{ comp.data|safe }};
-const schema = {{ schema|safe }};
+const compData = JSON.parse(document.getElementById('comp-data').textContent);
+const schema = JSON.parse(document.getElementById('schema-data').textContent);
 const container = document.getElementById('form-fields');
 const repeaterCounters = {};
 

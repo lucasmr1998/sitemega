@@ -148,3 +148,21 @@ class FooterLink(models.Model):
 
     def __str__(self):
         return self.title
+
+
+# ─── Cache Invalidation Signals ──────────────────────────────────────────────
+
+from django.db.models.signals import post_save, post_delete
+
+
+def _invalidate_nav_cache(**kwargs):
+    cache.delete_many(['main_menus', 'algar_menus', 'footer_columns'])
+
+
+for _model in (MenuItem, MegaMenuColumn, MegaMenuLink):
+    post_save.connect(_invalidate_nav_cache, sender=_model)
+    post_delete.connect(_invalidate_nav_cache, sender=_model)
+
+for _model in (FooterColumn, FooterLink):
+    post_save.connect(_invalidate_nav_cache, sender=_model)
+    post_delete.connect(_invalidate_nav_cache, sender=_model)
