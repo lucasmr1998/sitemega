@@ -25,4 +25,4 @@ def page_view(request, slug=None):
 
 
 def lojas_redirect(request):
-    return redirect('https://megalinktelecom.com.br/lojas')
+    return redirect('https://megalinkpiaui.com.br/lojas')

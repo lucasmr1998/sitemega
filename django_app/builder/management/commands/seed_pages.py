@@ -57,7 +57,7 @@ class Command(BaseCommand):
                         'badge_text_color': '#FFFFFF',
                         'period': '/mês',
                         'button_text': 'Aproveitar Oferta',
-                        'button_link': 'https://api.whatsapp.com/send/?phone=558922210068&text=Ol%C3%A1%2C+vim+pelo+site%2C+gostaria+de+contratar+o+plano+de+320MB',
+                        'button_link': 'https://api.whatsapp.com/send/?phone=558922210067&text=Ol%C3%A1%2C+vim+pelo+site%2C+gostaria+de+contratar+o+plano+de+320MB',
                         'features': [
                             'Instalação Grátis',
                             '100% fibra óptica',
@@ -79,7 +79,7 @@ class Command(BaseCommand):
                         'badge_text_color': '#FFFFFF',
                         'period': '/mês',
                         'button_text': 'Aproveitar Oferta',
-                        'button_link': 'https://api.whatsapp.com/send/?phone=558922210068&text=Ol%C3%A1%2C+vim+pelo+site%2C+gostaria+de+contratar+o+plano+de+620MB',
+                        'button_link': 'https://api.whatsapp.com/send/?phone=558922210067&text=Ol%C3%A1%2C+vim+pelo+site%2C+gostaria+de+contratar+o+plano+de+620MB',
                         'features': [
                             'Instalação Grátis',
                             '100% fibra óptica',
@@ -101,7 +101,7 @@ class Command(BaseCommand):
                         'badge_text_color': '#FFFFFF',
                         'period': '/mês',
                         'button_text': 'Aproveitar Oferta',
-                        'button_link': 'https://api.whatsapp.com/send/?phone=558922210068&text=Ol%C3%A1%2C+vim+pelo+site%2C+gostaria+de+contratar+o+plano+de+1GB',
+                        'button_link': 'https://api.whatsapp.com/send/?phone=558922210067&text=Ol%C3%A1%2C+vim+pelo+site%2C+gostaria+de+contratar+o+plano+de+1GB',
                         'features': [
                             'Instalação grátis',
                             '100% fibra óptica',
@@ -320,7 +320,7 @@ class Command(BaseCommand):
                 'subheading': 'Planos acessíveis que cabem no seu bolso. Fale com um de nossos consultores e escolha a melhor opção para você.',
                 'bg_color': '#2323FA',
                 'primary_btn_text': 'Falar com Consultor',
-                'primary_btn_link': 'https://api.whatsapp.com/send/?phone=558922210068&text=Ol%C3%A1%2C+gostaria+de+saber+mais+sobre+o+Rastreamento+Veicular',
+                'primary_btn_link': 'https://api.whatsapp.com/send/?phone=558922210067&text=Ol%C3%A1%2C+gostaria+de+saber+mais+sobre+o+Rastreamento+Veicular',
                 'primary_btn_icon': 'fa-brands fa-whatsapp',
                 'secondary_btn_text': 'Ver Planos',
                 'secondary_btn_link': '#',
