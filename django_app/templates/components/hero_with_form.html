@@ -40,11 +40,10 @@
                         <p class="text-sm text-gray-500 mb-6">{{ data.form_subtitle }}</p>
                     {% endif %}
 
-                    <form class="space-y-4" id="leadForm_{{ data.form_source|default:'geral' }}" data-source="{{ data.form_source|default:'geral' }}">
+                    <form class="flex flex-wrap gap-3" id="leadForm_{{ data.form_source|default:'geral' }}" data-source="{{ data.form_source|default:'geral' }}">
                         {% if data.form_fields %}
                             {% for field in data.form_fields %}
-                                {% if field.half_width %}<div class="grid grid-cols-2 gap-4"><div>{% endif %}
-                                <div{% if not field.half_width %} class="w-full"{% endif %}>
+                                <div class="{% if field.half_width %}w-[calc(50%-6px)]{% else %}w-full{% endif %}">
                                     <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">{{ field.label }}</label>
                                     {% if field.type == 'select' %}
                                         <select name="{{ field.name }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[{{ data.bg_color|default:'#2323FA' }}] outline-none transition appearance-none bg-white text-gray-800">
@@ -57,7 +56,6 @@
                                             placeholder="{{ field.placeholder|default:'' }}">
                                     {% endif %}
                                 </div>
-                                {% if field.half_width %}</div>{% endif %}
                             {% endfor %}
                         {% else %}
                             <div>
