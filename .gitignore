@@ -6,7 +6,7 @@ dist/
 build/
 
 # Django
-django_app/db.sqlite3
+# django_app/db.sqlite3
 django_app/media/
 django_app/staticfiles/
 *.log
